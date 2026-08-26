@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: recoverai-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: recoverai
+      POSTGRES_PASSWORD: recoverai
+      POSTGRES_DB: recoverai
+    ports:
+      - "5432:5432"
+    volumes:
+      - recoverai_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  recoverai_postgres_data:
