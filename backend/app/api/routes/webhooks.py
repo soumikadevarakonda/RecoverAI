@@ -68,27 +68,47 @@ async def razorpay_webhook(
             detail="Missing event type",
         )
 
-    merchant_id: UUID | None = None
-    if settings.dev_merchant_id:
-        try:
-            merchant_id = UUID(settings.dev_merchant_id)
-        except (ValueError, AttributeError) as exc:
-            raise HTTPException(
-                status_code=500,
-                detail="Invalid DEV_MERCHANT_ID configuration",
-            ) from exc
-
-    webhook_event = WebhookEvent(
-        razorpay_event_id=x_razorpay_event_id,
-        event_type=event_type,
-        payload=payload,
-        processing_status="received",
-        merchant_id=merchant_id,
+    existing_event = db.scalar(
+        select(WebhookEvent)
+        .where(WebhookEvent.razorpay_event_id == x_razorpay_event_id)
+        .with_for_update()
     )
 
-    db.add(webhook_event)
-    db.commit()
-    db.refresh(webhook_event)
+    if existing_event:
+        if existing_event.processing_status == "processed":
+            return {
+                "status": "duplicate",
+                "event_id": x_razorpay_event_id,
+            }
+
+        webhook_event = existing_event
+        webhook_event.processing_status = "received"
+        webhook_event.error_message = None
+        db.add(webhook_event)
+        db.commit()
+        db.refresh(webhook_event)
+    else:
+        merchant_id: UUID | None = None
+        if settings.dev_merchant_id:
+            try:
+                merchant_id = UUID(settings.dev_merchant_id)
+            except (ValueError, AttributeError) as exc:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Invalid DEV_MERCHANT_ID configuration",
+                ) from exc
+
+        webhook_event = WebhookEvent(
+            razorpay_event_id=x_razorpay_event_id,
+            event_type=event_type,
+            payload=payload,
+            processing_status="received",
+            merchant_id=merchant_id,
+        )
+
+        db.add(webhook_event)
+        db.commit()
+        db.refresh(webhook_event)
 
     try:
         normalized = normalize_payment_event(payload)

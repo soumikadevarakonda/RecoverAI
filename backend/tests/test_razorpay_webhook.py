@@ -221,3 +221,235 @@ def test_webhook_successful_persistence(client, db_session):
     assert payment_event.occurred_at.tzinfo is not None
 
 
+def test_webhook_duplicate_event_handling(client):
+    event_id = f"evt_dup_{uuid.uuid4().hex[:12]}"
+    payment_id = f"pay_dup_{uuid.uuid4().hex[:12]}"
+    payload = {
+        "entity": "event",
+        "event": "payment.failed",
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": payment_id,
+                    "amount": 10000,
+                    "currency": "INR",
+                    "status": "failed",
+                    "created_at": 1700000000,
+                }
+            }
+        },
+    }
+
+    body, sig = make_signed_payload(payload)
+    headers = {
+        "x-razorpay-signature": sig,
+        "x-razorpay-event-id": event_id,
+        "content-type": "application/json",
+    }
+
+    # First delivery
+    resp1 = client.post("/api/v1/webhooks/razorpay", content=body, headers=headers)
+    assert resp1.status_code == 200
+    assert resp1.json()["status"] == "received"
+
+    # Duplicate delivery
+    resp2 = client.post("/api/v1/webhooks/razorpay", content=body, headers=headers)
+    assert resp2.status_code == 200
+    assert resp2.json()["status"] == "duplicate"
+    assert resp2.json()["event_id"] == event_id
+
+
+def test_webhook_downstream_failure_preserves_raw_event(client, db_session):
+    event_id = f"evt_fail_{uuid.uuid4().hex[:12]}"
+    # Malformed inner payment structure missing entity dict
+    payload = {
+        "entity": "event",
+        "event": "payment.failed",
+        "payload": {
+            "payment": {}
+        },
+    }
+
+    body, sig = make_signed_payload(payload)
+    response = client.post(
+        "/api/v1/webhooks/razorpay",
+        content=body,
+        headers={
+            "x-razorpay-signature": sig,
+            "x-razorpay-event-id": event_id,
+            "content-type": "application/json",
+        },
+    )
+
+    # Must return 500 and not swallow exception
+    assert response.status_code == 500
+    assert "Downstream payment processing failed" in response.json()["detail"]
+
+    # Raw WebhookEvent must remain persisted with failed status and error message
+    webhook_event = db_session.scalar(
+        select(WebhookEvent).where(WebhookEvent.razorpay_event_id == event_id)
+    )
+    assert webhook_event is not None
+    assert webhook_event.processing_status == "failed"
+    assert webhook_event.error_message is not None
+    assert "'entity'" in webhook_event.error_message
+    assert webhook_event.processed_at is not None
+    assert webhook_event.processed_at.tzinfo is not None
+
+
+def test_failed_event_successful_retry(client, db_session):
+    event_id = f"evt_retry_succ_{uuid.uuid4().hex[:12]}"
+    payment_id = f"pay_retry_succ_{uuid.uuid4().hex[:12]}"
+
+    # 1. First attempt fails due to malformed payload
+    failed_payload = {
+        "entity": "event",
+        "event": "payment.failed",
+        "payload": {"payment": {}},
+    }
+    body1, sig1 = make_signed_payload(failed_payload)
+    resp1 = client.post(
+        "/api/v1/webhooks/razorpay",
+        content=body1,
+        headers={
+            "x-razorpay-signature": sig1,
+            "x-razorpay-event-id": event_id,
+            "content-type": "application/json",
+        },
+    )
+    assert resp1.status_code == 500
+
+    # Verify event is recorded as failed in DB
+    ev = db_session.scalar(
+        select(WebhookEvent).where(WebhookEvent.razorpay_event_id == event_id)
+    )
+    assert ev is not None
+    assert ev.processing_status == "failed"
+    assert ev.error_message is not None
+
+    # 2. Razorpay retries same event_id with valid payload
+    valid_payload = {
+        "entity": "event",
+        "event": "payment.failed",
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": payment_id,
+                    "order_id": "order_retry_1",
+                    "amount": 75000,
+                    "currency": "INR",
+                    "status": "failed",
+                    "created_at": 1700000000,
+                }
+            }
+        },
+    }
+    body2, sig2 = make_signed_payload(valid_payload)
+    resp2 = client.post(
+        "/api/v1/webhooks/razorpay",
+        content=body2,
+        headers={
+            "x-razorpay-signature": sig2,
+            "x-razorpay-event-id": event_id,
+            "content-type": "application/json",
+        },
+    )
+    assert resp2.status_code == 200
+    assert resp2.json()["status"] == "received"
+
+    # Refresh and verify WebhookEvent transitioned to processed and cleared error
+    db_session.refresh(ev)
+    assert ev.processing_status == "processed"
+    assert ev.error_message is None
+
+    # Verify payment exists
+    payment = db_session.scalar(
+        select(Payment).where(Payment.razorpay_payment_id == payment_id)
+    )
+    assert payment is not None
+    assert payment.amount == 75000
+
+    # Verify exactly 1 PaymentEvent exists for this webhook event (no duplicates)
+    payment_events = db_session.scalars(
+        select(PaymentEvent).where(PaymentEvent.webhook_event_id == ev.id)
+    ).all()
+    assert len(payment_events) == 1
+
+
+def test_failed_event_failed_retry(client, db_session):
+    event_id = f"evt_retry_fail_{uuid.uuid4().hex[:12]}"
+
+    failed_payload = {
+        "entity": "event",
+        "event": "payment.failed",
+        "payload": {"payment": {}},
+    }
+    body, sig = make_signed_payload(failed_payload)
+    headers = {
+        "x-razorpay-signature": sig,
+        "x-razorpay-event-id": event_id,
+        "content-type": "application/json",
+    }
+
+    # Attempt 1
+    resp1 = client.post("/api/v1/webhooks/razorpay", content=body, headers=headers)
+    assert resp1.status_code == 500
+
+    # Attempt 2 (Retry still fails)
+    resp2 = client.post("/api/v1/webhooks/razorpay", content=body, headers=headers)
+    assert resp2.status_code == 500
+
+    # WebhookEvent remains failed with error recorded
+    ev = db_session.scalar(
+        select(WebhookEvent).where(WebhookEvent.razorpay_event_id == event_id)
+    )
+    assert ev is not None
+    assert ev.processing_status == "failed"
+    assert ev.error_message is not None
+
+
+def test_processed_event_no_reprocessing(client, db_session):
+    event_id = f"evt_noreprocess_{uuid.uuid4().hex[:12]}"
+    payment_id = f"pay_noreprocess_{uuid.uuid4().hex[:12]}"
+
+    payload = {
+        "entity": "event",
+        "event": "payment.failed",
+        "payload": {
+            "payment": {
+                "entity": {
+                    "id": payment_id,
+                    "amount": 33000,
+                    "currency": "INR",
+                    "status": "failed",
+                    "created_at": 1700000000,
+                }
+            }
+        },
+    }
+    body, sig = make_signed_payload(payload)
+    headers = {
+        "x-razorpay-signature": sig,
+        "x-razorpay-event-id": event_id,
+        "content-type": "application/json",
+    }
+
+    # Initial delivery
+    resp1 = client.post("/api/v1/webhooks/razorpay", content=body, headers=headers)
+    assert resp1.status_code == 200
+    assert resp1.json()["status"] == "received"
+
+    # Redelivery of processed event
+    resp2 = client.post("/api/v1/webhooks/razorpay", content=body, headers=headers)
+    assert resp2.status_code == 200
+    assert resp2.json()["status"] == "duplicate"
+    assert resp2.json()["event_id"] == event_id
+
+    # Verify only 1 PaymentEvent exists in DB
+    ev = db_session.scalar(
+        select(WebhookEvent).where(WebhookEvent.razorpay_event_id == event_id)
+    )
+    payment_events = db_session.scalars(
+        select(PaymentEvent).where(PaymentEvent.webhook_event_id == ev.id)
+    ).all()
+    assert len(payment_events) == 1
