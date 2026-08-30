@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api.routes import webhooks
+from app.api.routes import webhooks, merchant
 
 
 app = FastAPI(
@@ -20,5 +20,10 @@ def health_check():
 
 app.include_router(
     webhooks.router,
+    prefix="/api/v1",
+)
+
+app.include_router(
+    merchant.router,
     prefix="/api/v1",
 )
