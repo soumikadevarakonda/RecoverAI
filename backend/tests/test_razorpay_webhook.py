@@ -34,7 +34,16 @@ def ensure_dev_merchant(db_session):
     if not settings.razorpay_webhook_secret:
         settings.razorpay_webhook_secret = "test-webhook-secret"
 
-    if not settings.dev_merchant_id:
+    from uuid import UUID
+    merchant_exists = False
+    if settings.dev_merchant_id:
+        try:
+            m_uuid = UUID(settings.dev_merchant_id)
+            merchant_exists = db_session.get(Merchant, m_uuid) is not None
+        except ValueError:
+            pass
+
+    if not settings.dev_merchant_id or not merchant_exists:
         merchant = db_session.scalar(select(Merchant).limit(1))
         if not merchant:
             merchant = Merchant(name="Test Merchant")
