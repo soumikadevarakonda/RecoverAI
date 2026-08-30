@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
@@ -17,14 +17,26 @@ class Merchant(Base):
         default=uuid.uuid4,
     )
 
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
 
     razorpay_account_id: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
+        unique=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
     )

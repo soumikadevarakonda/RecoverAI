@@ -8,8 +8,11 @@ class Settings(BaseSettings):
     razorpay_key_secret: str = ""
     razorpay_webhook_secret: str = ""
 
+    dev_merchant_id: str = ""
+
     model_config = SettingsConfigDict(
         env_file=".env",
+        env_file_encoding="utf-8",
         extra="ignore",
     )
 
