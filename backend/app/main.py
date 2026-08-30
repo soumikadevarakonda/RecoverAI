@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 
+from app.api.routes import webhooks
+
+
 app = FastAPI(
     title="RecoverAI",
     description="Agentic merchant revenue recovery system",
@@ -13,3 +16,9 @@ def health_check():
         "status": "ok",
         "service": "recoverai-api",
     }
+
+
+app.include_router(
+    webhooks.router,
+    prefix="/api/v1",
+)
