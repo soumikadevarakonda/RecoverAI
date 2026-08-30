@@ -15,53 +15,35 @@ def decide_recovery_action(
     diagnosis: Diagnosis,
     policy: RecoveryPolicy,
 ) -> RecoveryAttempt:
-    selected_action = "ops_review"
-    incentive_amount = 0
-    status = "pending"
+    from app.domains.recovery.economics import evaluate_recovery_economics
 
-    allowed_actions = policy.allowed_actions or []
+    candidates = evaluate_recovery_economics(db, incident, diagnosis, policy)
+    eligible_candidates = [c for c in candidates if c.is_eligible]
 
-    # Priority 1: retry
-    if "retry" in allowed_actions and diagnosis.diagnosis_type not in [
-        "bank-specific degradation",
-        "payment-method degradation",
-    ]:
-        selected_action = "retry"
-        status = "approved"
+    priority = {"retry": 4, "grace_period": 3, "incentive": 2, "ops_review": 1}
+    eligible_candidates.sort(
+        key=lambda x: (x.expected_net_recovery_value, priority[x.action]),
+        reverse=True,
+    )
 
-    # Priority 2: grace_period
-    elif "grace_period" in allowed_actions:
-        selected_action = "grace_period"
-        status = "approved"
-
-    # Priority 3: incentive
-    elif "incentive" in allowed_actions and diagnosis.diagnosis_type != "insufficient evidence / unknown":
-        proposed_incentive = 500  # Default deterministic incentive in minor units (paise)
-
-        # Check policy max incentive
-        within_max_incentive = proposed_incentive <= policy.max_incentive
-
-        # Check exposure limit
-        active_exposure = db.scalar(
-            select(func.sum(RecoveryAttempt.incentive_amount)).where(
-                RecoveryAttempt.merchant_id == incident.merchant_id,
-                RecoveryAttempt.status.in_(["pending", "approved", "executed"]),
-            )
-        ) or 0
-        within_exposure_limit = (active_exposure + proposed_incentive) <= policy.max_exposure
-
-        if within_max_incentive and within_exposure_limit:
-            selected_action = "incentive"
-            incentive_amount = proposed_incentive
-            
-            # Check approval threshold (monetary limit in float format)
-            if proposed_incentive > policy.approval_threshold:
+    if eligible_candidates:
+        best_candidate = eligible_candidates[0]
+        selected_action = best_candidate.action
+        
+        if selected_action == "incentive":
+            incentive_amount = best_candidate.action_cost
+            if incentive_amount > policy.approval_threshold:
                 status = "pending"
             else:
                 status = "approved"
-
-    # Fallback to ops_review
-    if selected_action == "ops_review":
+        elif selected_action == "ops_review":
+            incentive_amount = 0
+            status = "pending"
+        else:
+            incentive_amount = 0
+            status = "approved"
+    else:
+        selected_action = "ops_review"
         incentive_amount = 0
         status = "pending"
 
