@@ -85,7 +85,7 @@ def decide_recovery_action(
 def execute_recovery_attempt(
     db: Session,
     attempt: RecoveryAttempt,
-    client = None,
+    client: RazorpayClient = None,
 ) -> RecoveryAttempt:
     from app.integrations.razorpay import RazorpayClient
 
@@ -153,3 +153,45 @@ def process_recovery_webhook(db: Session, payload: dict) -> None:
 
     db.add(attempt)
     db.flush()
+
+
+def orchestrate_recovery(
+    db: Session,
+    incident: Incident,
+    client: RazorpayClient = None,
+) -> RecoveryAttempt:
+    from app.domains.diagnosis.service import diagnose_incident
+    from app.models.recovery_policy import RecoveryPolicy
+    from app.integrations.razorpay import RazorpayClient
+
+    # 1. Idempotency check: do not execute recovery if the incident has already been handled
+    existing_attempt = db.scalar(
+        select(RecoveryAttempt).where(RecoveryAttempt.incident_id == incident.id)
+    )
+    if existing_attempt:
+        return existing_attempt
+
+    # 2. Run Diagnosis
+    diagnosis = diagnose_incident(db, incident)
+
+    # 3. Load merchant RecoveryPolicy
+    policy = db.scalar(
+        select(RecoveryPolicy).where(RecoveryPolicy.merchant_id == incident.merchant_id)
+    )
+    if not policy:
+        policy = RecoveryPolicy(
+            merchant_id=incident.merchant_id,
+            allowed_actions=[],
+            max_incentive=0,
+            max_exposure=0,
+            approval_threshold=0.0,
+        )
+
+    # 4. Make recovery decision / create RecoveryAttempt
+    attempt = decide_recovery_action(db, incident, diagnosis, policy)
+
+    # 5. If approved for automatic execution, execute it
+    if attempt.status == "approved" and attempt.selected_action != "ops_review":
+        attempt = execute_recovery_attempt(db, attempt, client)
+
+    return attempt
