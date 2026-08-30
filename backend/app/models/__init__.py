@@ -4,6 +4,7 @@ from app.models.webhook_event import WebhookEvent
 from app.models.payment_event import PaymentEvent
 from app.models.payment import Payment
 from app.models.incident import Incident
+from app.models.diagnosis import Diagnosis
 
 __all__ = [
     "Base",
@@ -12,4 +13,5 @@ __all__ = [
     "PaymentEvent",
     "Payment",
     "Incident",
+    "Diagnosis",
 ]
