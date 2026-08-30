@@ -111,13 +111,17 @@ async def razorpay_webhook(
         db.refresh(webhook_event)
 
     try:
-        normalized = normalize_payment_event(payload)
+        if event_type == "payment_link.paid":
+            from app.domains.recovery.service import process_recovery_webhook
+            process_recovery_webhook(db=db, payload=payload)
+        else:
+            normalized = normalize_payment_event(payload)
 
-        process_payment_event(
-            db=db,
-            webhook_event=webhook_event,
-            normalized=normalized,
-        )
+            process_payment_event(
+                db=db,
+                webhook_event=webhook_event,
+                normalized=normalized,
+            )
 
         webhook_event.processing_status = "processed"
         webhook_event.processed_at = datetime.now(timezone.utc)

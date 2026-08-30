@@ -80,3 +80,76 @@ def decide_recovery_action(
     db.commit()
     db.refresh(attempt)
     return attempt
+
+
+def execute_recovery_attempt(
+    db: Session,
+    attempt: RecoveryAttempt,
+    client = None,
+) -> RecoveryAttempt:
+    from app.integrations.razorpay import RazorpayClient
+
+    if attempt.status != "approved":
+        raise ValueError("Only approved attempts can be executed")
+
+    if client is None:
+        client = RazorpayClient()
+
+    original_amount = attempt.payment.amount if attempt.payment else 1000
+    charge_amount = max(0, original_amount - attempt.incentive_amount)
+
+    expire_by = int(attempt.expires_at.timestamp()) if attempt.expires_at else None
+
+    link_response = client.create_payment_link(
+        amount=charge_amount,
+        reference_id=attempt.recovery_id,
+        description=f"Payment recovery link for {attempt.recovery_id}",
+        expire_by=expire_by,
+    )
+
+    attempt.payment_link_id = link_response["id"]
+    attempt.short_url = link_response["short_url"]
+    attempt.status = "executed"
+
+    db.add(attempt)
+    db.commit()
+    db.refresh(attempt)
+    return attempt
+
+
+def process_recovery_webhook(db: Session, payload: dict) -> None:
+    plink_entity = payload.get("payload", {}).get("payment_link", {}).get("entity", {})
+    payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
+
+    recovery_id = plink_entity.get("reference_id") or plink_entity.get("notes", {}).get("recovery_id")
+    if not recovery_id:
+        raise ValueError("Missing recovery_id or reference_id in payment link webhook")
+
+    attempt = db.scalar(
+        select(RecoveryAttempt)
+        .where(RecoveryAttempt.recovery_id == recovery_id)
+        .with_for_update()
+    )
+    if not attempt:
+        raise ValueError(f"No RecoveryAttempt found for recovery_id: {recovery_id}")
+
+    payment_link_id = plink_entity.get("id")
+    if attempt.payment_link_id != payment_link_id:
+        raise ValueError(
+            f"Payment link ID {payment_link_id} does not match expected attempt link ID {attempt.payment_link_id}"
+        )
+
+    plink_status = plink_entity.get("status")
+    payment_status = payment_entity.get("status")
+    if plink_status != "paid" or payment_status not in ["authorized", "captured"]:
+        raise ValueError("Payment link is not paid or associated payment is not captured/authorized")
+
+    if attempt.status == "recovered":
+        return
+
+    attempt.status = "recovered"
+    attempt.resulting_payment_id = payment_entity.get("id")
+    attempt.recovered_amount = payment_entity.get("amount") or plink_entity.get("amount_paid") or 0
+
+    db.add(attempt)
+    db.flush()
