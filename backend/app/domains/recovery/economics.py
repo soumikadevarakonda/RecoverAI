@@ -23,6 +23,7 @@ class ActionEconomics(BaseModel):
     expected_recovery_rate: float = Field(..., description="Assumed recovery rate")
     is_eligible: bool = Field(..., description="Whether this action is allowed and eligible")
     reason_ineligible: str | None = Field(None, description="Reason for ineligibility if not eligible")
+    rate_source: str = Field(..., description="Source/evidence level of the recovery rate used")
 
 
 def evaluate_recovery_economics(
@@ -31,6 +32,7 @@ def evaluate_recovery_economics(
     diagnosis: Diagnosis,
     policy: RecoveryPolicy,
     rates: dict[str, float] = None,
+    min_attempts: int = 5,
 ) -> list[ActionEconomics]:
     if rates is None:
         rates = DEFAULT_RECOVERY_RATES
@@ -48,6 +50,8 @@ def evaluate_recovery_economics(
             RecoveryAttempt.status.in_(["pending", "approved", "executed"]),
         )
     ) or 0
+
+    from app.domains.recovery.outcomes import calculate_recovery_performance
 
     for action in candidate_actions:
         is_eligible = True
@@ -92,9 +96,25 @@ def evaluate_recovery_economics(
             # Always eligible as fallback
             pass
 
+        # Query historical performance for this action
+        perf = calculate_recovery_performance(
+            db=db,
+            merchant_id=incident.merchant_id,
+            method=incident.method,
+            bank=incident.bank,
+            error_code=incident.error_code,
+            selected_action=action,
+            min_attempts=min_attempts,
+        )
+
+        if perf.evidence_level != "none":
+            rate = perf.observed_recovery_rate
+            rate_source = perf.evidence_level
+        else:
+            rate = rates.get(action, 0.0)
+            rate_source = "configured"
+
         # Calculate values
-        rate = rates.get(action, 0.0)
-        
         if is_eligible:
             expected_recovery_amount = int(revenue_at_risk * rate)
             expected_net_recovery_value = expected_recovery_amount - cost
@@ -111,8 +131,8 @@ def evaluate_recovery_economics(
                 expected_recovery_rate=rate,
                 is_eligible=is_eligible,
                 reason_ineligible=reason_ineligible,
+                rate_source=rate_source,
             )
         )
 
     return results
-

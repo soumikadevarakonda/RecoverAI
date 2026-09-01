@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select
 
@@ -253,3 +253,168 @@ def test_zero_revenue_at_risk(db_session, create_merchant, create_incident_and_d
             assert c.expected_net_recovery_value == -500  # expected = 0, cost = 500
         else:
             assert c.expected_net_recovery_value == 0
+
+
+def test_historical_rate_overrides_configured_rate(db_session, create_merchant, create_incident_and_diagnosis):
+    m = create_merchant()
+    # Create 5 completed retry attempts at global level to trigger fallback selection
+    # (min_attempts=5, so 5 is enough evidence at global level)
+    for _ in range(5):
+        inc = Incident(
+            merchant_id=m.id, method="card", bank="HDFC", error_code="GATEWAY_ERROR", error_step="payment_authorization",
+            current_total_count=30, current_failed_count=10, current_failure_rate=0.33, current_total_amount=30000, current_failed_amount=10000,
+            baseline_total_count=30, baseline_failed_count=1, baseline_failure_rate=0.03, baseline_total_amount=30000, baseline_failed_amount=1000,
+            absolute_rate_increase=0.3, relative_degradation=10.0, revenue_at_risk=10000,
+            window_start=datetime.now(timezone.utc), window_end=datetime.now(timezone.utc),
+            baseline_start=datetime.now(timezone.utc), baseline_end=datetime.now(timezone.utc),
+        )
+        db_session.add(inc)
+        db_session.commit()
+
+        attempt = RecoveryAttempt(
+            recovery_id=f"rec_{uuid_import_override().hex[:12]}", merchant_id=m.id, incident_id=inc.id,
+            selected_action="retry", status="recovered", recovered_amount=10000
+        )
+        db_session.add(attempt)
+        db_session.commit()
+
+    # Create the current incident and diagnosis we're evaluating
+    incident, diagnosis = create_incident_and_diagnosis(m.id, "error-code spike", revenue_at_risk=10000)
+
+    policy = RecoveryPolicy(
+        merchant_id=m.id, allowed_actions=["retry"], max_incentive=1000, max_exposure=10000
+    )
+    db_session.add(policy)
+    db_session.commit()
+
+    candidates = evaluate_recovery_economics(db_session, incident, diagnosis, policy, min_attempts=5)
+    candidates_dict = {c.action: c for c in candidates}
+
+    # Since all 5 completed global retry attempts succeeded, observed recovery rate is 1.0 (100%)
+    # This overrides the configured rate of 0.30
+    assert candidates_dict["retry"].expected_recovery_rate == 1.0
+    assert candidates_dict["retry"].rate_source == "global"
+    assert candidates_dict["retry"].expected_recovery_amount == 10000
+
+
+def test_insufficient_history_falls_back_to_configured_rate(db_session, create_merchant, create_incident_and_diagnosis):
+    m = create_merchant()
+    # Create only 4 attempts (less than min_attempts=5)
+    for _ in range(4):
+        inc = Incident(
+            merchant_id=m.id, method="upi", bank="HDFC", error_code="GATEWAY_ERROR", error_step="payment_authorization",
+            current_total_count=30, current_failed_count=10, current_failure_rate=0.33, current_total_amount=30000, current_failed_amount=10000,
+            baseline_total_count=30, baseline_failed_count=1, baseline_failure_rate=0.03, baseline_total_amount=30000, baseline_failed_amount=1000,
+            absolute_rate_increase=0.3, relative_degradation=10.0, revenue_at_risk=10000,
+            window_start=datetime.now(timezone.utc), window_end=datetime.now(timezone.utc),
+            baseline_start=datetime.now(timezone.utc), baseline_end=datetime.now(timezone.utc),
+        )
+        db_session.add(inc)
+        db_session.commit()
+
+        attempt = RecoveryAttempt(
+            recovery_id=f"rec_{uuid_import_override().hex[:12]}", merchant_id=m.id, incident_id=inc.id,
+            selected_action="retry", status="recovered", recovered_amount=10000
+        )
+        db_session.add(attempt)
+        db_session.commit()
+
+    incident, diagnosis = create_incident_and_diagnosis(m.id, "error-code spike", revenue_at_risk=10000)
+
+    policy = RecoveryPolicy(
+        merchant_id=m.id, allowed_actions=["retry"], max_incentive=1000, max_exposure=10000
+    )
+    db_session.add(policy)
+    db_session.commit()
+
+    candidates = evaluate_recovery_economics(db_session, incident, diagnosis, policy, min_attempts=5)
+    candidates_dict = {c.action: c for c in candidates}
+
+    # Since 4 < 5 attempts, falls back to default configured rate (0.30)
+    assert candidates_dict["retry"].expected_recovery_rate == 0.30
+    assert candidates_dict["retry"].rate_source == "configured"
+    assert candidates_dict["retry"].expected_recovery_amount == 3000
+
+
+def test_different_actions_use_their_own_historical_outcomes(db_session, create_merchant, create_incident_and_diagnosis):
+    m = create_merchant()
+    # Create 5 retry successes and 5 grace_period failures
+    for action, status in [("retry", "recovered"), ("grace_period", "failed")]:
+        for _ in range(5):
+            inc = Incident(
+                merchant_id=m.id, method="card", bank="HDFC", error_code="GATEWAY_ERROR", error_step="payment_authorization",
+                current_total_count=30, current_failed_count=10, current_failure_rate=0.33, current_total_amount=30000, current_failed_amount=10000,
+                baseline_total_count=30, baseline_failed_count=1, baseline_failure_rate=0.03, baseline_total_amount=30000, baseline_failed_amount=1000,
+                absolute_rate_increase=0.3, relative_degradation=10.0, revenue_at_risk=10000,
+                window_start=datetime.now(timezone.utc), window_end=datetime.now(timezone.utc),
+                baseline_start=datetime.now(timezone.utc), baseline_end=datetime.now(timezone.utc),
+            )
+            db_session.add(inc)
+            db_session.commit()
+
+            attempt = RecoveryAttempt(
+                recovery_id=f"rec_{uuid_import_override().hex[:12]}", merchant_id=m.id, incident_id=inc.id,
+                selected_action=action, status=status, recovered_amount=10000 if status == "recovered" else 0
+            )
+            db_session.add(attempt)
+            db_session.commit()
+
+    incident, diagnosis = create_incident_and_diagnosis(m.id, "error-code spike", revenue_at_risk=10000)
+
+    policy = RecoveryPolicy(
+        merchant_id=m.id, allowed_actions=["retry", "grace_period"], max_incentive=1000, max_exposure=10000
+    )
+    db_session.add(policy)
+    db_session.commit()
+
+    candidates = evaluate_recovery_economics(db_session, incident, diagnosis, policy, min_attempts=5)
+    candidates_dict = {c.action: c for c in candidates}
+
+    # retry observed rate = 1.0, grace_period observed rate = 0.0
+    assert candidates_dict["retry"].expected_recovery_rate == 1.0
+    assert candidates_dict["retry"].rate_source == "global"
+    assert candidates_dict["grace_period"].expected_recovery_rate == 0.0
+    assert candidates_dict["grace_period"].rate_source == "global"
+
+
+def test_evidence_level_is_preserved(db_session, create_merchant, create_incident_and_diagnosis):
+    m = create_merchant()
+    # Create 5 exact cohort retry attempts
+    for _ in range(5):
+        inc = Incident(
+            merchant_id=m.id, method="upi", bank="HDFC", error_code="GATEWAY_ERROR", error_step="payment_authorization",
+            current_total_count=30, current_failed_count=10, current_failure_rate=0.33, current_total_amount=30000, current_failed_amount=10000,
+            baseline_total_count=30, baseline_failed_count=1, baseline_failure_rate=0.03, baseline_total_amount=30000, baseline_failed_amount=1000,
+            absolute_rate_increase=0.3, relative_degradation=10.0, revenue_at_risk=10000,
+            window_start=datetime.now(timezone.utc), window_end=datetime.now(timezone.utc),
+            baseline_start=datetime.now(timezone.utc), baseline_end=datetime.now(timezone.utc),
+        )
+        db_session.add(inc)
+        db_session.commit()
+
+        attempt = RecoveryAttempt(
+            recovery_id=f"rec_{uuid_import_override().hex[:12]}", merchant_id=m.id, incident_id=inc.id,
+            selected_action="retry", status="recovered", recovered_amount=10000
+        )
+        db_session.add(attempt)
+        db_session.commit()
+
+    incident, diagnosis = create_incident_and_diagnosis(m.id, "error-code spike", revenue_at_risk=10000)
+    incident.error_code = "GATEWAY_ERROR" # Ensure matching exact cohort
+
+    policy = RecoveryPolicy(
+        merchant_id=m.id, allowed_actions=["retry"], max_incentive=1000, max_exposure=10000
+    )
+    db_session.add(policy)
+    db_session.commit()
+
+    candidates = evaluate_recovery_economics(db_session, incident, diagnosis, policy, min_attempts=5)
+    candidates_dict = {c.action: c for c in candidates}
+
+    assert candidates_dict["retry"].rate_source == "exact_cohort"
+
+
+def uuid_import_override():
+    import uuid
+    return uuid.uuid4()
+

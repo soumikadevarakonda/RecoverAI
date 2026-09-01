@@ -7,9 +7,10 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     String,
+    JSON,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base
 
@@ -102,6 +103,11 @@ class RecoveryAttempt(Base):
         nullable=True,
     )
 
+    decision_evidence: Mapped[dict] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+
     merchant = relationship("Merchant", backref="recovery_attempts")
     incident = relationship("Incident", backref="recovery_attempts")
     payment = relationship("Payment", backref="recovery_attempts")
@@ -110,3 +116,10 @@ class RecoveryAttempt(Base):
         CheckConstraint("incentive_amount >= 0", name="chk_incentive_amount_non_negative"),
         CheckConstraint("recovered_amount >= 0", name="chk_recovered_amount_non_negative"),
     )
+
+    @validates("status")
+    def validate_status(self, key, value):
+        current_status = getattr(self, "status", None)
+        if current_status == "recovered" and value != "recovered":
+            raise ValueError("A recovery attempt must never transition backwards from 'recovered' to another state")
+        return value

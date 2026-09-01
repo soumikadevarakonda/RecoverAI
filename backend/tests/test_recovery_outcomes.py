@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 import uuid
 import pytest
 from app.db.session import SessionLocal
@@ -197,3 +197,106 @@ def test_zero_completed_attempts(db_session, create_merchant):
     assert perf.observed_recovery_rate == 0.0
     assert perf.total_revenue_at_risk == 0
     assert perf.total_recovered_amount == 0
+
+
+def test_fallback_exact_cohort(db_session, create_merchant, create_incident, create_attempt):
+    m = create_merchant()
+    inc1 = create_incident(m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", revenue_at_risk=10000)
+    inc2 = create_incident(m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", revenue_at_risk=10000)
+
+    create_attempt(m.id, inc1.id, status="recovered", recovered_amount=10000, selected_action="retry")
+    create_attempt(m.id, inc2.id, status="recovered", recovered_amount=10000, selected_action="retry")
+
+    perf = calculate_recovery_performance(
+        db_session, m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", selected_action="retry", min_attempts=2
+    )
+    assert perf.evidence_level == "exact_cohort"
+    assert perf.total_attempts == 2
+    assert perf.observed_recovery_rate == 1.0
+
+
+def test_fallback_method_error(db_session, create_merchant, create_incident, create_attempt):
+    m = create_merchant()
+    # Diff banks, same method and error_code
+    inc_hdfc = create_incident(m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", revenue_at_risk=10000)
+    inc_icici = create_incident(m.id, method="upi", bank="ICICI", error_code="BAD_REQUEST", revenue_at_risk=10000)
+
+    create_attempt(m.id, inc_hdfc.id, status="recovered", recovered_amount=10000, selected_action="retry")
+    create_attempt(m.id, inc_icici.id, status="recovered", recovered_amount=10000, selected_action="retry")
+
+    # exact cohort (upi + HDFC + BAD_REQUEST) only has 1 attempt (which is < min_attempts of 2)
+    # method + error_code (upi + BAD_REQUEST) has 2 attempts (which is >= 2)
+    perf = calculate_recovery_performance(
+        db_session, m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", selected_action="retry", min_attempts=2
+    )
+    assert perf.evidence_level == "method_error"
+    assert perf.total_attempts == 2
+    assert perf.observed_recovery_rate == 1.0
+
+
+def test_fallback_method(db_session, create_merchant, create_incident, create_attempt):
+    m = create_merchant()
+    # Same method, diff error_codes and banks
+    inc1 = create_incident(m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", revenue_at_risk=10000)
+    inc2 = create_incident(m.id, method="upi", bank="ICICI", error_code="NET_ERR", revenue_at_risk=10000)
+
+    create_attempt(m.id, inc1.id, status="recovered", recovered_amount=10000, selected_action="retry")
+    create_attempt(m.id, inc2.id, status="recovered", recovered_amount=10000, selected_action="retry")
+
+    # method_error (upi + BAD_REQUEST) has 1 attempt
+    # method (upi) has 2 attempts
+    perf = calculate_recovery_performance(
+        db_session, m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", selected_action="retry", min_attempts=2
+    )
+    assert perf.evidence_level == "method"
+    assert perf.total_attempts == 2
+
+
+def test_fallback_global(db_session, create_merchant, create_incident, create_attempt):
+    m = create_merchant()
+    # Diff methods
+    inc1 = create_incident(m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", revenue_at_risk=10000)
+    inc2 = create_incident(m.id, method="card", bank="ICICI", error_code="NET_ERR", revenue_at_risk=10000)
+
+    create_attempt(m.id, inc1.id, status="recovered", recovered_amount=10000, selected_action="retry")
+    create_attempt(m.id, inc2.id, status="recovered", recovered_amount=10000, selected_action="retry")
+
+    # method (upi) has 1 attempt
+    # global (retry) has 2 attempts
+    perf = calculate_recovery_performance(
+        db_session, m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", selected_action="retry", min_attempts=2
+    )
+    assert perf.evidence_level == "global"
+    assert perf.total_attempts == 2
+
+
+def test_insufficient_evidence_fallback_none(db_session, create_merchant, create_incident, create_attempt):
+    m = create_merchant()
+    inc = create_incident(m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", revenue_at_risk=10000)
+    create_attempt(m.id, inc.id, status="recovered", recovered_amount=10000, selected_action="retry")
+
+    # global has 1 attempt, which is < min_attempts of 2
+    perf = calculate_recovery_performance(
+        db_session, m.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", selected_action="retry", min_attempts=2
+    )
+    assert perf.evidence_level == "none"
+    assert perf.total_attempts == 0
+    assert perf.recovered_attempts == 0
+    assert perf.observed_recovery_rate == 0.0
+
+
+def test_merchant_isolation_in_fallback(db_session, create_merchant, create_incident, create_attempt):
+    m1 = create_merchant("M1")
+    m2 = create_merchant("M2")
+    inc1 = create_incident(m1.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", revenue_at_risk=10000)
+    inc2 = create_incident(m2.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", revenue_at_risk=10000)
+
+    create_attempt(m1.id, inc1.id, status="recovered", recovered_amount=10000, selected_action="retry")
+    create_attempt(m2.id, inc2.id, status="recovered", recovered_amount=10000, selected_action="retry")
+
+    # For m1, global retry has 1 attempt, which is < min_attempts of 2 (should fallback to none)
+    perf = calculate_recovery_performance(
+        db_session, m1.id, method="upi", bank="HDFC", error_code="BAD_REQUEST", selected_action="retry", min_attempts=2
+    )
+    assert perf.evidence_level == "none"
+
