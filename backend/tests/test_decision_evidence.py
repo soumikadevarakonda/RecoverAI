@@ -7,6 +7,7 @@ from app.models.merchant import Merchant
 from app.models.payment import Payment
 from app.models.incident import Incident
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.diagnosis import Diagnosis
 from tests.test_recovery_strategist import MockLLMProvider
@@ -17,7 +18,10 @@ from app.domains.recovery.strategist import AIRecommendation
 def db_session():
     session = SessionLocal()
     try:
+        from app.models.recovery_audit_event import RecoveryAuditEvent
+        session.execute(delete(RecoveryAuditEvent))
         session.execute(delete(RecoveryAttempt))
+        session.execute(delete(RecoveryCampaign))
         session.execute(delete(RecoveryPolicy))
         session.execute(delete(Diagnosis))
         session.execute(delete(Incident))
@@ -25,6 +29,15 @@ def db_session():
         session.execute(delete(Merchant))
         session.commit()
         yield session
+        session.execute(delete(RecoveryAuditEvent))
+        session.execute(delete(RecoveryAttempt))
+        session.execute(delete(RecoveryCampaign))
+        session.execute(delete(RecoveryPolicy))
+        session.execute(delete(Diagnosis))
+        session.execute(delete(Incident))
+        session.execute(delete(Payment))
+        session.execute(delete(Merchant))
+        session.commit()
     finally:
         session.close()
 
@@ -101,6 +114,23 @@ def create_incident_and_diagnosis(db_session):
         db_session.add(diagnosis)
         db_session.commit()
         db_session.refresh(diagnosis)
+
+        # Seed matching real failed payment for the incident window
+        import uuid
+        payment = Payment(
+            merchant_id=merchant_id,
+            razorpay_payment_id=f"pay_evi_{uuid.uuid4().hex[:10]}",
+            amount=revenue_at_risk,
+            currency="INR",
+            status="failed",
+            method=incident.method,
+            bank=incident.bank,
+            error_code=incident.error_code,
+            error_step=incident.error_step,
+            created_at=now - timedelta(minutes=15),
+        )
+        db_session.add(payment)
+        db_session.commit()
 
         return incident, diagnosis
     return _create

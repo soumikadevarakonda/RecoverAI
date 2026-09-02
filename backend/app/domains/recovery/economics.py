@@ -29,8 +29,8 @@ class ActionEconomics(BaseModel):
 def evaluate_recovery_economics(
     db: Session,
     incident: Incident,
-    diagnosis: Diagnosis,
-    policy: RecoveryPolicy,
+    diagnosis: Diagnosis | None = None,
+    policy: RecoveryPolicy = None,
     rates: dict[str, float] = None,
     min_attempts: int = 5,
 ) -> list[ActionEconomics]:
@@ -44,12 +44,13 @@ def evaluate_recovery_economics(
     results = []
 
     # Fetch active exposure for exposure checks
-    active_exposure = db.scalar(
+    raw_exposure = db.scalar(
         select(func.sum(RecoveryAttempt.incentive_amount)).where(
             RecoveryAttempt.merchant_id == incident.merchant_id,
             RecoveryAttempt.status.in_(["pending", "approved", "executed"]),
         )
-    ) or 0
+    )
+    active_exposure = int(raw_exposure) if raw_exposure is not None else 0
 
     from app.domains.recovery.outcomes import calculate_recovery_performance
 
@@ -63,7 +64,7 @@ def evaluate_recovery_economics(
             if "retry" not in allowed_actions:
                 is_eligible = False
                 reason_ineligible = "Action not allowed by merchant policy"
-            elif diagnosis.diagnosis_type in [
+            elif diagnosis and diagnosis.diagnosis_type in [
                 "bank-specific degradation",
                 "payment-method degradation",
             ]:
@@ -82,7 +83,7 @@ def evaluate_recovery_economics(
             if "incentive" not in allowed_actions:
                 is_eligible = False
                 reason_ineligible = "Action not allowed by merchant policy"
-            elif diagnosis.diagnosis_type == "insufficient evidence / unknown":
+            elif diagnosis and diagnosis.diagnosis_type == "insufficient evidence / unknown":
                 is_eligible = False
                 reason_ineligible = "Incentive not appropriate for unknown/insufficient evidence diagnosis"
             elif proposed_incentive > policy.max_incentive:

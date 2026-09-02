@@ -184,4 +184,27 @@ def diagnose_incident(db: Session, incident: Incident) -> Diagnosis:
 
     db.commit()
     db.refresh(diagnosis)
+
+    try:
+        from app.domains.recovery.audit import record_audit_event, RecoveryAuditEventType
+        record_audit_event(
+            db=db,
+            merchant_id=incident.merchant_id,
+            incident_id=incident.id,
+            event_type=RecoveryAuditEventType.DIAGNOSIS_CREATED,
+            actor_type="system",
+            actor_id="diagnosis_engine",
+            reason_code="DIAGNOSIS_COMPLETED",
+            explanation=diagnosis.explanation,
+            evidence={
+                "diagnosis_type": diagnosis.diagnosis_type,
+                "confidence": diagnosis.confidence,
+                "supporting_evidence": diagnosis.supporting_evidence,
+            },
+            flush=True,
+        )
+        db.commit()
+    except Exception:
+        pass
+
     return diagnosis

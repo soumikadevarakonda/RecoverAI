@@ -7,6 +7,7 @@ from app.models.merchant import Merchant
 from app.models.payment import Payment
 from app.models.incident import Incident
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.diagnosis import Diagnosis
 
@@ -15,7 +16,10 @@ from app.models.diagnosis import Diagnosis
 def clean_db():
     session = SessionLocal()
     try:
+        from app.models.recovery_audit_event import RecoveryAuditEvent
+        session.execute(delete(RecoveryAuditEvent))
         session.execute(delete(RecoveryAttempt))
+        session.execute(delete(RecoveryCampaign))
         session.execute(delete(RecoveryPolicy))
         session.execute(delete(Diagnosis))
         session.execute(delete(Incident))
@@ -23,7 +27,9 @@ def clean_db():
         session.execute(delete(Merchant))
         session.commit()
         yield session
+        session.execute(delete(RecoveryAuditEvent))
         session.execute(delete(RecoveryAttempt))
+        session.execute(delete(RecoveryCampaign))
         session.execute(delete(RecoveryPolicy))
         session.execute(delete(Diagnosis))
         session.execute(delete(Incident))
@@ -116,6 +122,7 @@ def test_generation_is_strictly_reproducible(clean_db):
 
     # Clear and run again
     clean_db.execute(delete(RecoveryAttempt))
+    clean_db.execute(delete(RecoveryCampaign))
     clean_db.execute(delete(RecoveryPolicy))
     clean_db.execute(delete(Diagnosis))
     clean_db.execute(delete(Incident))

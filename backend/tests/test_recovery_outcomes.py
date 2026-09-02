@@ -6,8 +6,12 @@ from app.domains.recovery.outcomes import calculate_recovery_performance
 from app.models.merchant import Merchant
 from app.models.incident import Incident
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.diagnosis import Diagnosis
+from app.models.payment import Payment
+from app.models.payment_event import PaymentEvent
+from app.models.webhook_event import WebhookEvent
 
 
 @pytest.fixture
@@ -15,9 +19,13 @@ def db_session():
     session = SessionLocal()
     try:
         session.query(RecoveryAttempt).delete()
+        session.query(RecoveryCampaign).delete()
         session.query(RecoveryPolicy).delete()
         session.query(Diagnosis).delete()
         session.query(Incident).delete()
+        session.query(PaymentEvent).delete()
+        session.query(Payment).delete()
+        session.query(WebhookEvent).delete()
         session.query(Merchant).delete()
         session.commit()
         yield session

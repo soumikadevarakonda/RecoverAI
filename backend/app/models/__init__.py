@@ -7,6 +7,8 @@ from app.models.incident import Incident
 from app.models.diagnosis import Diagnosis
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
+from app.models.recovery_audit_event import RecoveryAuditEvent
 
 __all__ = [
     "Base",
@@ -18,4 +20,6 @@ __all__ = [
     "Diagnosis",
     "RecoveryPolicy",
     "RecoveryAttempt",
+    "RecoveryCampaign",
+    "RecoveryAuditEvent",
 ]

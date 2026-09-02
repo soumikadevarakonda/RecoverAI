@@ -3,7 +3,7 @@ import httpx
 from typing import Type, TypeVar
 from pydantic import BaseModel
 
-from app.integrations.llm.provider import LLMProvider
+from app.integrations.llm.provider import LLMProvider, LLMTokenUsage
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -15,6 +15,7 @@ class GeminiLLMProvider(LLMProvider):
     ):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY", "")
         self.model_name = model_name
+        self.last_token_usage = None
 
     def generate_structured_output(
         self,
@@ -65,6 +66,16 @@ class GeminiLLMProvider(LLMProvider):
             candidates = resp_data.get("candidates", [])
             if not candidates:
                 raise ValueError("No candidates returned from Gemini API")
+
+            usage = resp_data.get("usageMetadata", {})
+            if usage:
+                self.last_token_usage = LLMTokenUsage(
+                    input_tokens=usage.get("promptTokenCount", 0),
+                    output_tokens=usage.get("candidatesTokenCount", 0),
+                    total_tokens=usage.get("totalTokenCount", 0),
+                )
+            else:
+                self.last_token_usage = None
             
             text = candidates[0]["content"]["parts"][0]["text"]
             return response_model.model_validate_json(text)

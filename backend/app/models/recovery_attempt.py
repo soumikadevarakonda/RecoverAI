@@ -45,9 +45,16 @@ class RecoveryAttempt(Base):
         index=True,
     )
 
-    payment_id: Mapped[uuid.UUID] = mapped_column(
+    payment_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("payments.id"),
+        nullable=True,
+        index=True,
+    )
+
+    campaign_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("recovery_campaigns.id"),
         nullable=True,
         index=True,
     )
@@ -111,6 +118,7 @@ class RecoveryAttempt(Base):
     merchant = relationship("Merchant", backref="recovery_attempts")
     incident = relationship("Incident", backref="recovery_attempts")
     payment = relationship("Payment", backref="recovery_attempts")
+    campaign = relationship("RecoveryCampaign", backref="recovery_attempts")
 
     __table_args__ = (
         CheckConstraint("incentive_amount >= 0", name="chk_incentive_amount_non_negative"),

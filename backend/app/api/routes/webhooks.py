@@ -89,7 +89,30 @@ async def razorpay_webhook(
         db.refresh(webhook_event)
     else:
         merchant_id: UUID | None = None
-        if settings.dev_merchant_id:
+
+        # 1. Authoritative resolution for payment_link.paid via RecoveryAttempt
+        if event_type == "payment_link.paid":
+            plink_entity = payload.get("payload", {}).get("payment_link", {}).get("entity", {})
+            ref_id = plink_entity.get("reference_id") or (plink_entity.get("notes", {}) or {}).get("recovery_id")
+            if ref_id:
+                from app.models.recovery_attempt import RecoveryAttempt
+                attempt = db.scalar(
+                    select(RecoveryAttempt).where(RecoveryAttempt.recovery_id == ref_id)
+                )
+                if attempt:
+                    merchant_id = attempt.merchant_id
+
+        # 2. Resolution for payment events via payment notes
+        if not merchant_id:
+            notes = (payload.get("payload", {}).get("payment", {}).get("entity", {}) or {}).get("notes", {})
+            if isinstance(notes, dict) and "merchant_id" in notes:
+                try:
+                    merchant_id = UUID(str(notes["merchant_id"]))
+                except (ValueError, TypeError):
+                    pass
+
+        # 3. Fallback to configured dev_merchant_id for backwards compatibility in single-tenant dev mode
+        if not merchant_id and settings.dev_merchant_id:
             try:
                 merchant_id = UUID(settings.dev_merchant_id)
             except (ValueError, AttributeError) as exc:

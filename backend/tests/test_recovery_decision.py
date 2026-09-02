@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 import pytest
 from sqlalchemy import select
 
@@ -12,6 +12,7 @@ from app.models.payment_event import PaymentEvent
 from app.models.webhook_event import WebhookEvent
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
 
 
 @pytest.fixture
@@ -19,6 +20,7 @@ def db_session():
     session = SessionLocal()
     try:
         session.query(RecoveryAttempt).delete()
+        session.query(RecoveryCampaign).delete()
         session.query(RecoveryPolicy).delete()
         session.query(Diagnosis).delete()
         session.query(Incident).delete()
@@ -83,8 +85,22 @@ def create_incident_and_diagnosis(db_session):
             confidence=0.8,
         )
         db_session.add(diagnosis)
+        # Seed matching real failed payment for the incident window
+        import uuid
+        payment = Payment(
+            merchant_id=merchant_id,
+            razorpay_payment_id=f"pay_dec_{uuid.uuid4().hex[:10]}",
+            amount=10000,
+            currency="INR",
+            status="failed",
+            method=incident.method,
+            bank=incident.bank,
+            error_code=incident.error_code,
+            error_step=incident.error_step,
+            created_at=now - timedelta(minutes=15),
+        )
+        db_session.add(payment)
         db_session.commit()
-        db_session.refresh(diagnosis)
 
         return incident, diagnosis
     return _create

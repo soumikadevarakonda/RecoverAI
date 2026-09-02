@@ -15,9 +15,13 @@ def build_decision_evidence(
     selected_action: str,
     ai_strategist_used: bool,
     reason: str,
+    guardrail_result: Any | None = None,
+    adaptive_result: Any | None = None,
+    operational_memory: Any | None = None,
 ) -> dict:
     """
-    Assembles structured evidence explaining why a recovery action was selected.
+    Assembles structured evidence explaining why a recovery action was selected,
+    including candidate economics, historical outcomes, and guardrail verification.
     """
     # Evaluate economics to get candidate details
     candidates = evaluate_recovery_economics(db, incident, diagnosis, policy)
@@ -55,9 +59,9 @@ def build_decision_evidence(
 
     # Construct the structured decision evidence dictionary
     evidence = {
-        "diagnosis_type": diagnosis.diagnosis_type,
-        "diagnosis_confidence": diagnosis.confidence,
-        "diagnosis_explanation": diagnosis.explanation,
+        "diagnosis_type": diagnosis.diagnosis_type if diagnosis else "unknown",
+        "diagnosis_confidence": diagnosis.confidence if diagnosis else 0.0,
+        "diagnosis_explanation": diagnosis.explanation if diagnosis else "No diagnosis provided.",
         "cohort_dimensions": {
             "method": incident.method,
             "bank": incident.bank,
@@ -74,6 +78,56 @@ def build_decision_evidence(
         "ai_strategist_used": ai_strategist_used,
         "concise_decision_reason": reason,
     }
+
+    if guardrail_result is not None:
+        evidence.update({
+            "guardrail_decision": guardrail_result.decision,
+            "guardrail_reason_code": guardrail_result.reason_code,
+            "guardrail_explanation": guardrail_result.explanation,
+            "guardrail_audit_event": guardrail_result.audit_event_type,
+            "guardrail_checks": [c.model_dump() for c in guardrail_result.checks],
+            "guardrail_evaluated_exposure": guardrail_result.evaluated_exposure,
+            "policy_values": guardrail_result.policy_values,
+        })
+    else:
+        evidence.update({
+            "guardrail_decision": "allowed" if is_eligible else "blocked",
+            "guardrail_reason_code": "WITHIN_POLICY" if is_eligible else "ACTION_DISALLOWED",
+            "guardrail_explanation": "Default guardrail policy check passed." if is_eligible else "Action disallowed by policy.",
+            "guardrail_audit_event": "GUARDRAIL_APPROVED" if is_eligible else "GUARDRAIL_BLOCKED",
+            "guardrail_checks": [],
+            "guardrail_evaluated_exposure": {},
+            "policy_values": {
+                "allowed_actions": list(policy.allowed_actions),
+                "max_incentive": policy.max_incentive,
+                "max_exposure": policy.max_exposure,
+                "approval_threshold": policy.approval_threshold,
+            },
+        })
+
+    if adaptive_result is not None:
+        evidence["adaptive_analyst"] = {
+            "is_accepted": adaptive_result.is_accepted,
+            "rejection_reason": adaptive_result.rejection_reason,
+            "fallback_action": adaptive_result.fallback_action,
+            "recommendation": adaptive_result.recommendation.model_dump() if adaptive_result.recommendation else None,
+            "telemetry": adaptive_result.telemetry.model_dump() if getattr(adaptive_result, "telemetry", None) else None,
+        }
+
+    if operational_memory is not None:
+        sample_size = getattr(operational_memory, "historical_sample_size", 0)
+        ev_level = getattr(operational_memory, "evidence_level", "insufficient")
+        if hasattr(ev_level, "value"):
+            ev_level = ev_level.value
+
+        evidence["operational_memory"] = {
+            "memory_used": sample_size > 0,
+            "evidence_level": str(ev_level),
+            "historical_sample_size": sample_size,
+            "signal_breakdown": operational_memory.signal_breakdown.model_dump() if hasattr(getattr(operational_memory, "signal_breakdown", None), "model_dump") else {},
+            "threshold_statistics": operational_memory.threshold_statistics.model_dump() if hasattr(getattr(operational_memory, "threshold_statistics", None), "model_dump") else {},
+            "summary": getattr(operational_memory, "summary", ""),
+        }
 
     return evidence
 

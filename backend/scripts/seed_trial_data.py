@@ -14,6 +14,7 @@ from app.models.incident import Incident
 from app.models.diagnosis import Diagnosis
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
 from app.domains.recovery.trial_evaluation import TRIAL_REFERENCE_TIME
 
 
@@ -32,8 +33,15 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant") -> M
 
     for existing_merchant in existing_merchants:
         # Clean up records in correct safe order to avoid FK violation
+        from app.models.recovery_audit_event import RecoveryAuditEvent
+        db.execute(
+            delete(RecoveryAuditEvent).where(RecoveryAuditEvent.merchant_id == existing_merchant.id)
+        )
         db.execute(
             delete(RecoveryAttempt).where(RecoveryAttempt.merchant_id == existing_merchant.id)
+        )
+        db.execute(
+            delete(RecoveryCampaign).where(RecoveryCampaign.merchant_id == existing_merchant.id)
         )
         db.execute(
             delete(RecoveryPolicy).where(RecoveryPolicy.merchant_id == existing_merchant.id)
@@ -150,13 +158,29 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant") -> M
     db.add(past_diag)
     db.commit()
 
-    # Seed attempts for this past incident (historically executed)
+    # Seed historical campaign and attempts for this past incident (historically executed)
+    past_campaign = RecoveryCampaign(
+        campaign_id=f"camp_hist_{merchant.id.hex[:6]}",
+        merchant_id=merchant.id,
+        incident_id=past_inc.id,
+        selected_action="retry",
+        status="completed",
+        target_payment_count=17,
+        total_revenue_at_risk=170000,
+        per_attempt_incentive=0,
+        total_incentive_cost=2500,
+        created_at=past_inc_time,
+    )
+    db.add(past_campaign)
+    db.flush()
+
     # We want 5 retry successes and some failures
     for j in range(5):
         attempt = RecoveryAttempt(
             recovery_id=f"rec_hist_retry_{j}_{random.randint(1000, 9999)}",
             merchant_id=merchant.id,
             incident_id=past_inc.id,
+            campaign_id=past_campaign.id,
             selected_action="retry",
             status="recovered",
             recovered_amount=10000,
@@ -171,6 +195,7 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant") -> M
             recovery_id=f"rec_hist_gp_{j}_{random.randint(1000, 9999)}",
             merchant_id=merchant.id,
             incident_id=past_inc.id,
+            campaign_id=past_campaign.id,
             selected_action="grace_period",
             status="recovered" if j < 3 else "failed",
             recovered_amount=10000 if j < 3 else 0,
@@ -185,6 +210,7 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant") -> M
             recovery_id=f"rec_hist_inc_{j}_{random.randint(1000, 9999)}",
             merchant_id=merchant.id,
             incident_id=past_inc.id,
+            campaign_id=past_campaign.id,
             selected_action="incentive",
             status="recovered" if j < 4 else "expired",
             recovered_amount=10000 if j < 4 else 0,
@@ -199,6 +225,7 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant") -> M
             recovery_id=f"rec_hist_ops_{j}_{random.randint(1000, 9999)}",
             merchant_id=merchant.id,
             incident_id=past_inc.id,
+            campaign_id=past_campaign.id,
             selected_action="ops_review",
             status="pending",
             recovered_amount=0,

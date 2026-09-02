@@ -1,4 +1,4 @@
-﻿from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field
 from uuid import UUID
 from datetime import datetime
 from typing import List, Optional
@@ -33,6 +33,7 @@ class IncidentListResponse(BaseModel):
 class RecoveryAttemptSummarySchema(BaseModel):
     id: UUID
     recovery_id: str
+    campaign_id: Optional[UUID] = None
     selected_action: str
     incentive_amount: int
     status: str
@@ -77,6 +78,7 @@ class RecoveryAttemptDetailResponse(BaseModel):
     recovery_id: str
     merchant_id: UUID
     incident_id: UUID
+    campaign_id: Optional[UUID] = None
     payment_id: Optional[UUID] = None
     selected_action: str
     incentive_amount: int
@@ -87,3 +89,21 @@ class RecoveryAttemptDetailResponse(BaseModel):
     resulting_payment_id: Optional[str] = None
     payment_link_id: Optional[str] = None
     short_url: Optional[str] = None
+    decision_evidence: Optional[dict] = None
+
+
+class RecoveryAuditEventResponse(BaseModel):
+    id: UUID
+    event_type: str
+    actor_type: str
+    actor_id: Optional[str] = None
+    previous_state: Optional[str] = None
+    new_state: Optional[str] = None
+    reason_code: Optional[str] = None
+    explanation: Optional[str] = None
+    evidence: dict = {}
+    created_at: datetime
+    recovery_attempt_id: Optional[UUID] = None
+    campaign_id: Optional[UUID] = None
+    incident_id: Optional[UUID] = None
+    payment_id: Optional[UUID] = None

@@ -14,6 +14,7 @@ from app.models.payment_event import PaymentEvent
 from app.models.webhook_event import WebhookEvent
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
 from app.models.diagnosis import Diagnosis
 
 
@@ -21,7 +22,10 @@ from app.models.diagnosis import Diagnosis
 def db_session():
     session = SessionLocal()
     try:
+        from app.models.recovery_audit_event import RecoveryAuditEvent
+        session.query(RecoveryAuditEvent).delete()
         session.query(RecoveryAttempt).delete()
+        session.query(RecoveryCampaign).delete()
         session.query(RecoveryPolicy).delete()
         session.query(Diagnosis).delete()
         session.query(Incident).delete()
@@ -284,10 +288,24 @@ def test_execution_of_approved_recovery(db_session, create_merchant, create_inci
     merchant = create_merchant()
     incident = create_incident_with_diag(merchant.id)
 
+    pay = Payment(
+        merchant_id=merchant.id,
+        razorpay_payment_id="pay_to_exec_123",
+        amount=10000,
+        currency="INR",
+        status="failed",
+        method="upi",
+        bank="HDFC",
+    )
+    db_session.add(pay)
+    db_session.commit()
+    db_session.refresh(pay)
+
     attempt = RecoveryAttempt(
         recovery_id="rec_to_execute",
         merchant_id=merchant.id,
         incident_id=incident.id,
+        payment_id=pay.id,
         selected_action="grace_period",
         status="approved",
     )
@@ -354,3 +372,26 @@ def test_invalid_state_transitions(db_session, create_merchant, create_incident_
         headers={"X-Merchant-ID": str(merchant.id)},
     )
     assert response.status_code == 400
+
+
+def test_production_auth_mode_requires_bearer_token(db_session, create_merchant, monkeypatch):
+    from app.core.config import settings
+    merchant = create_merchant()
+    client = TestClient(app)
+
+    monkeypatch.setattr(settings, "auth_mode", "production")
+
+    # In production auth mode, unsigned X-Merchant-ID must be rejected with 401 Unauthorized
+    resp = client.get(
+        "/api/v1/merchant/dashboard/summary",
+        headers={"X-Merchant-ID": str(merchant.id)},
+    )
+    assert resp.status_code == 401
+    assert "Bearer token" in resp.json()["detail"]
+
+    # In production auth mode, valid Bearer token for existing merchant must succeed
+    resp_authed = client.get(
+        "/api/v1/merchant/dashboard/summary",
+        headers={"Authorization": f"Bearer {merchant.id}"},
+    )
+    assert resp_authed.status_code == 200

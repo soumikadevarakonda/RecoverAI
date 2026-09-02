@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 import json
@@ -462,3 +462,117 @@ def test_processed_event_no_reprocessing(client, db_session):
         select(PaymentEvent).where(PaymentEvent.webhook_event_id == ev.id)
     ).all()
     assert len(payment_events) == 1
+
+
+def test_webhook_merchant_attribution_from_recovery_attempt(client, db_session):
+    """
+    Verifies that WebhookEvent.merchant_id is authoritatively resolved from the
+    RecoveryAttempt for payment_link.paid events, instead of falling back to DEV_MERCHANT_ID.
+    """
+    from app.models.recovery_attempt import RecoveryAttempt
+    from app.models.payment import Payment
+    from app.models.incident import Incident
+
+    # Create distinct Merchant B
+    merchant_b = Merchant(name="Tenant Merchant B")
+    db_session.add(merchant_b)
+    db_session.commit()
+    db_session.refresh(merchant_b)
+
+    # Make sure DEV_MERCHANT_ID is NOT merchant_b
+    assert str(merchant_b.id) != settings.dev_merchant_id
+
+    now = datetime.now(timezone.utc)
+    inc_b = Incident(
+        merchant_id=merchant_b.id,
+        method="upi",
+        bank="HDFC",
+        error_code="GATEWAY_ERROR",
+        error_step="payment_authorization",
+        current_total_count=10,
+        current_failed_count=1,
+        current_failure_rate=0.1,
+        current_total_amount=15000,
+        current_failed_amount=15000,
+        baseline_total_count=10,
+        baseline_failed_count=0,
+        baseline_failure_rate=0.0,
+        baseline_total_amount=15000,
+        baseline_failed_amount=0,
+        absolute_rate_increase=0.1,
+        relative_degradation=1.0,
+        revenue_at_risk=15000,
+        window_start=now - timedelta(minutes=30),
+        window_end=now,
+        baseline_start=now - timedelta(hours=2),
+        baseline_end=now - timedelta(hours=1),
+        status="detected",
+    )
+    db_session.add(inc_b)
+    db_session.flush()
+
+    pay_id_failed = f"pay_tb_{uuid.uuid4().hex[:10]}"
+    pay_b = Payment(
+        merchant_id=merchant_b.id,
+        razorpay_payment_id=pay_id_failed,
+        amount=15000,
+        currency="INR",
+        status="failed",
+    )
+    db_session.add(pay_b)
+    db_session.commit()
+
+    rec_id = f"rec_attrib_{uuid.uuid4().hex[:8]}"
+    plink_id = f"plink_attrib_{uuid.uuid4().hex[:8]}"
+    attempt = RecoveryAttempt(
+        recovery_id=rec_id,
+        merchant_id=merchant_b.id,
+        incident_id=inc_b.id,
+        payment_id=pay_b.id,
+        payment_link_id=plink_id,
+        selected_action="retry",
+        incentive_amount=0,
+        status="executed",
+    )
+    db_session.add(attempt)
+    db_session.commit()
+
+    event_id = f"evt_attrib_{uuid.uuid4().hex[:12]}"
+    pay_id_captured = f"pay_hook_{uuid.uuid4().hex[:10]}"
+    payload = {
+        "entity": "event",
+        "event": "payment_link.paid",
+        "payload": {
+            "payment_link": {
+                "entity": {
+                    "id": plink_id,
+                    "reference_id": rec_id,
+                    "status": "paid",
+                    "amount_paid": 15000,
+                }
+            },
+            "payment": {
+                "entity": {
+                    "id": pay_id_captured,
+                    "amount": 15000,
+                    "status": "captured",
+                }
+            }
+        },
+    }
+    body, sig = make_signed_payload(payload)
+    headers = {
+        "x-razorpay-signature": sig,
+        "x-razorpay-event-id": event_id,
+        "content-type": "application/json",
+    }
+
+    resp = client.post("/api/v1/webhooks/razorpay", content=body, headers=headers)
+    assert resp.status_code == 200
+
+    # Verify WebhookEvent in database was attributed to Merchant B!
+    webhook_ev = db_session.scalar(
+        select(WebhookEvent).where(WebhookEvent.razorpay_event_id == event_id)
+    )
+    assert webhook_ev is not None
+    assert webhook_ev.merchant_id == merchant_b.id

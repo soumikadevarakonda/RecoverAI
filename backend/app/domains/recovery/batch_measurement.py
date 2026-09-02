@@ -64,13 +64,14 @@ def calculate_batch_measurement(
     ) or 0
 
     # 3. Revenue at risk (sum of revenue_at_risk from Incidents in time range)
-    revenue_risk = db.scalar(
+    raw_revenue_risk = db.scalar(
         select(func.sum(Incident.revenue_at_risk)).where(
             Incident.merchant_id == merchant_id,
             Incident.created_at >= start_time,
             Incident.created_at <= end_time,
         )
-    ) or 0
+    )
+    revenue_risk = int(raw_revenue_risk) if raw_revenue_risk is not None else 0
 
     # 4. Fetch all RecoveryAttempts within the time range
     attempts = db.scalars(

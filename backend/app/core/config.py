@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     razorpay_webhook_secret: str = ""
 
     dev_merchant_id: str = ""
+    environment: str = "development"
+    auth_mode: str = "development"
 
     model_config = SettingsConfigDict(
         env_file=".env",

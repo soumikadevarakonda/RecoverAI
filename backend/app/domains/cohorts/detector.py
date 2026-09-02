@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 import uuid
 from sqlalchemy.orm import Session
 
@@ -109,5 +109,35 @@ def detect_cohort_degradations(
         db.commit()
         for inc in incidents:
             db.refresh(inc)
+            try:
+                from app.domains.recovery.audit import record_audit_event, RecoveryAuditEventType
+                record_audit_event(
+                    db=db,
+                    merchant_id=merchant_id,
+                    incident_id=inc.id,
+                    event_type=RecoveryAuditEventType.INCIDENT_DETECTED,
+                    actor_type="system",
+                    actor_id="cohort_detector",
+                    new_state="detected",
+                    reason_code="DEGRADATION_DETECTED",
+                    explanation=f"Cohort degradation detected for {inc.method}/{inc.bank} ({inc.error_code})",
+                    evidence={
+                        "method": inc.method,
+                        "bank": inc.bank,
+                        "error_code": inc.error_code,
+                        "error_step": inc.error_step,
+                        "current_failure_rate": inc.current_failure_rate,
+                        "baseline_failure_rate": inc.baseline_failure_rate,
+                        "absolute_rate_increase": inc.absolute_rate_increase,
+                        "relative_degradation": inc.relative_degradation,
+                        "revenue_at_risk": inc.revenue_at_risk,
+                        "window_start": inc.window_start.isoformat(),
+                        "window_end": inc.window_end.isoformat(),
+                    },
+                    flush=True,
+                )
+                db.commit()
+            except Exception:
+                pass
 
     return incidents

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import pytest
 from pydantic import ValidationError
 
@@ -11,6 +11,7 @@ from app.models.recovery_policy import RecoveryPolicy
 from app.integrations.llm.provider import LLMProvider
 from app.db.session import SessionLocal
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
 from app.models.payment import Payment
 from app.models.payment_event import PaymentEvent
 from app.models.webhook_event import WebhookEvent
@@ -20,6 +21,7 @@ def db_session():
     session = SessionLocal()
     try:
         session.query(RecoveryAttempt).delete()
+        session.query(RecoveryCampaign).delete()
         session.query(RecoveryPolicy).delete()
         session.query(Diagnosis).delete()
         session.query(Incident).delete()
@@ -83,14 +85,31 @@ def test_context(db_session):
         absolute_rate_increase=0.3,
         relative_degradation=10.0,
         revenue_at_risk=10000,
-        window_start=datetime.now(timezone.utc),
+        window_start=datetime.now(timezone.utc) - timedelta(minutes=30),
         window_end=datetime.now(timezone.utc),
-        baseline_start=datetime.now(timezone.utc),
-        baseline_end=datetime.now(timezone.utc),
+        baseline_start=datetime.now(timezone.utc) - timedelta(hours=2),
+        baseline_end=datetime.now(timezone.utc) - timedelta(hours=1),
     )
     db_session.add(incident)
     db_session.commit()
     db_session.refresh(incident)
+
+    # Seed matching real failed payment
+    import uuid
+    payment = Payment(
+        merchant_id=merchant.id,
+        razorpay_payment_id=f"pay_strat_{uuid.uuid4().hex[:10]}",
+        amount=10000,
+        currency="INR",
+        status="failed",
+        method=incident.method,
+        bank=incident.bank,
+        error_code=incident.error_code,
+        error_step=incident.error_step,
+        created_at=incident.window_start + timedelta(minutes=5),
+    )
+    db_session.add(payment)
+    db_session.commit()
 
     diagnosis = Diagnosis(
         incident_id=incident.id,

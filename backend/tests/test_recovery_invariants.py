@@ -7,6 +7,7 @@ from app.models.merchant import Merchant
 from app.models.payment import Payment
 from app.models.incident import Incident
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.diagnosis import Diagnosis
 
@@ -15,7 +16,10 @@ from app.models.diagnosis import Diagnosis
 def db_session():
     session = SessionLocal()
     try:
+        from app.models.recovery_audit_event import RecoveryAuditEvent
+        session.execute(delete(RecoveryAuditEvent))
         session.execute(delete(RecoveryAttempt))
+        session.execute(delete(RecoveryCampaign))
         session.execute(delete(RecoveryPolicy))
         session.execute(delete(Diagnosis))
         session.execute(delete(Incident))
@@ -23,6 +27,15 @@ def db_session():
         session.execute(delete(Merchant))
         session.commit()
         yield session
+        session.execute(delete(RecoveryAuditEvent))
+        session.execute(delete(RecoveryAttempt))
+        session.execute(delete(RecoveryCampaign))
+        session.execute(delete(RecoveryPolicy))
+        session.execute(delete(Diagnosis))
+        session.execute(delete(Incident))
+        session.execute(delete(Payment))
+        session.execute(delete(Merchant))
+        session.commit()
     finally:
         session.close()
 
@@ -239,6 +252,35 @@ def test_invariant_recovered_amount_exceeds_expected(db_session, create_merchant
     }
 
     with pytest.raises(ValueError, match="exceeds expected recovery amount"):
+        process_recovery_webhook(db_session, payload)
+
+
+def test_invariant_recovered_amount_underpaid_rejected(db_session, create_merchant, create_attempt):
+    m = create_merchant()
+    # original = 50000, incentive = 500. Expected recovery charge = 49500.
+    attempt = create_attempt(m.id, payment_link_id="plink_underpay", amount=50000, incentive=500)
+
+    payload = {
+        "event": "payment_link.paid",
+        "payload": {
+            "payment_link": {
+                "entity": {
+                    "id": "plink_underpay",
+                    "reference_id": attempt.recovery_id,
+                    "status": "paid",
+                }
+            },
+            "payment": {
+                "entity": {
+                    "id": "pay_under",
+                    "amount": 20000,  # Underpayment: 20000 < 49500
+                    "status": "captured",
+                }
+            }
+        }
+    }
+
+    with pytest.raises(ValueError, match="is less than expected recovery charge"):
         process_recovery_webhook(db_session, payload)
 
 

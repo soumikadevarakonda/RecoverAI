@@ -6,6 +6,7 @@ from app.models.merchant import Merchant
 from app.models.payment import Payment
 from app.models.incident import Incident
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.diagnosis import Diagnosis
 
@@ -14,7 +15,10 @@ from app.models.diagnosis import Diagnosis
 def db_session():
     session = SessionLocal()
     try:
+        from app.models.recovery_audit_event import RecoveryAuditEvent
+        session.query(RecoveryAuditEvent).delete()
         session.query(RecoveryAttempt).delete()
+        session.query(RecoveryCampaign).delete()
         session.query(RecoveryPolicy).delete()
         session.query(Diagnosis).delete()
         session.query(Incident).delete()

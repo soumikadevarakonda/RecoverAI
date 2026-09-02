@@ -1,4 +1,4 @@
-﻿import httpx
+import httpx
 from app.core.config import settings
 
 
@@ -37,3 +37,22 @@ class RazorpayClient:
         )
         response.raise_for_status()
         return response.json()
+
+    def get_payment_link_by_reference_id(self, reference_id: str) -> dict | None:
+        url = f"{self.base_url}/payment_links"
+        try:
+            response = httpx.get(
+                url,
+                params={"reference_id": reference_id},
+                auth=(self.key_id, self.key_secret),
+                timeout=10.0,
+            )
+            if response.status_code == 200:
+                data = response.json()
+                payment_links = data.get("payment_links", [])
+                for link in payment_links:
+                    if link.get("reference_id") == reference_id:
+                        return link
+        except Exception:
+            return None
+        return None

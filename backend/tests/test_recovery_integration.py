@@ -9,6 +9,7 @@ from app.models.merchant import Merchant
 from app.models.payment import Payment
 from app.models.incident import Incident
 from app.models.recovery_attempt import RecoveryAttempt
+from app.models.recovery_campaign import RecoveryCampaign
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.diagnosis import Diagnosis
 
@@ -48,7 +49,10 @@ class E2EMockLLMProvider(LLMProvider):
 def db_session():
     session = SessionLocal()
     try:
+        from app.models.recovery_audit_event import RecoveryAuditEvent
+        session.execute(delete(RecoveryAuditEvent))
         session.execute(delete(RecoveryAttempt))
+        session.execute(delete(RecoveryCampaign))
         session.execute(delete(RecoveryPolicy))
         session.execute(delete(Diagnosis))
         session.execute(delete(Incident))
@@ -56,6 +60,15 @@ def db_session():
         session.execute(delete(Merchant))
         session.commit()
         yield session
+        session.execute(delete(RecoveryAuditEvent))
+        session.execute(delete(RecoveryAttempt))
+        session.execute(delete(RecoveryCampaign))
+        session.execute(delete(RecoveryPolicy))
+        session.execute(delete(Diagnosis))
+        session.execute(delete(Incident))
+        session.execute(delete(Payment))
+        session.execute(delete(Merchant))
+        session.commit()
     finally:
         session.close()
 
@@ -442,8 +455,7 @@ def test_failure_path_strategist_failure_with_fallback(db_session, create_mercha
         status="detected",
     )
     db_session.add(incident)
-    db_session.commit()
-
+    db_session.flush()
     diagnosis = Diagnosis(
         incident_id=incident.id,
         diagnosis_type="bank-specific degradation",
@@ -452,6 +464,21 @@ def test_failure_path_strategist_failure_with_fallback(db_session, create_mercha
         confidence=0.85,
     )
     db_session.add(diagnosis)
+
+    import uuid
+    payment1 = Payment(
+        merchant_id=m.id,
+        razorpay_payment_id=f"pay_int1_{uuid.uuid4().hex[:10]}",
+        amount=100000,
+        currency="INR",
+        status="failed",
+        method=incident.method,
+        bank=incident.bank,
+        error_code=incident.error_code,
+        error_step=incident.error_step,
+        created_at=now - timedelta(minutes=15),
+    )
+    db_session.add(payment1)
     db_session.commit()
 
     bad_provider = E2EMockLLMProvider(response_data=Exception("LLM Timeout"))
@@ -520,6 +547,21 @@ def test_failure_path_policy_blocked_recovery(db_session, create_merchant):
         confidence=0.85,
     )
     db_session.add(diagnosis)
+
+    import uuid
+    payment2 = Payment(
+        merchant_id=m.id,
+        razorpay_payment_id=f"pay_int2_{uuid.uuid4().hex[:10]}",
+        amount=100000,
+        currency="INR",
+        status="failed",
+        method=incident.method,
+        bank=incident.bank,
+        error_code=incident.error_code,
+        error_step=incident.error_step,
+        created_at=now - timedelta(minutes=15),
+    )
+    db_session.add(payment2)
     db_session.commit()
 
     attempt = decide_recovery_action(
