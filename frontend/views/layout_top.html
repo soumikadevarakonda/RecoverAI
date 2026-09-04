@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>RecoverAI — Merchant Revenue Recovery Control Plane</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bg-carbon": "#070708",
+                        "surface-card": "#101112",
+                        "surface-elevated": "#151618",
+                        "surface-sidebar": "#0d0e0f",
+                        "border-hairline": "#232426",
+                        "border-light": "#2e3034",
+                        "text-main": "#e5e2e3",
+                        "text-muted": "#8f9299",
+                        "text-subtle": "#585a60",
+                        "accent-indigo": "#5E6BFF",
+                        "accent-cyan": "#50d8e9",
+                        "accent-amber": "#e0731d",
+                        "accent-coral": "#ff6b6b",
+                        "accent-green": "#22c55e"
+                    },
+                    fontFamily: {
+                        "heading": ["Manrope", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #070708; color: #e5e2e3; font-family: 'Inter', sans-serif; }
+        .inner-glow { box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05); }
+        .tab-active { color: #ffffff; border-bottom: 2px solid #5E6BFF; }
+        .tab-inactive { color: #8f9299; border-bottom: 2px solid transparent; }
+        .tab-inactive:hover { color: #e5e2e3; }
+        .animate-subtle-pulse { animation: pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .loading-skeleton { background: linear-gradient(90deg, #101112 25%, #181a1d 50%, #101112 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.5s infinite; }
+        @keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    </style>
+    <script src="js/api.js"></script>
+</head>
+<body class="bg-bg-carbon text-text-main min-h-screen flex flex-col selection:bg-accent-indigo selection:text-white antialiased">
+
+    <!-- Minimal Header -->
+    <header class="bg-bg-carbon/95 backdrop-blur-md w-full top-0 h-[72px] border-b border-border-hairline z-50 fixed">
+        <div class="flex justify-between items-center w-full px-8 max-w-[1600px] mx-auto h-full">
+            <div class="flex items-center gap-3.5">
+                <img src="assets/logo.png" alt="RecoverAI" class="h-[46px] w-auto object-contain shrink-0" />
+                <div class="flex flex-col justify-center">
+                    <span class="font-heading text-[17px] font-bold tracking-tight text-white leading-tight">RecoverAI</span>
+                    <span class="text-[10.5px] text-text-muted font-mono tracking-wider uppercase leading-tight mt-0.5">Revenue Recovery Control Plane</span>
+                </div>
+            </div>
+
+            <!-- Minimal Navigation -->
+            <nav class="hidden md:flex gap-8 h-full items-center text-[13px] font-medium">
+                <button onclick="navigate('command')" id="nav-command" class="tab-active h-full flex items-center px-1 transition-all">Command Center</button>
+                <button onclick="navigate('incidents')" id="nav-incidents" class="tab-inactive h-full flex items-center px-1 transition-all">Incident Detail</button>
+                <button onclick="navigate('decision')" id="nav-decision" class="tab-inactive h-full flex items-center px-1 transition-all">Decision Room</button>
+                <button onclick="navigate('campaign')" id="nav-campaign" class="tab-inactive h-full flex items-center px-1 transition-all">Recovery Campaign</button>
+                <button onclick="navigate('trace')" id="nav-trace" class="tab-inactive h-full flex items-center px-1 transition-all">Outcome &amp; Trace</button>
+            </nav>
+
+            <div class="flex items-center gap-4">
+                <div id="header-status-indicator" class="flex items-center gap-2 px-3 py-1.5 rounded bg-surface-card border border-border-hairline text-[12px] font-mono text-accent-cyan">
+                    <span class="w-2 h-2 rounded-full bg-accent-cyan animate-subtle-pulse"></span>
+                    <span id="header-status-text">CONNECTING...</span>
+                </div>
+                <div class="text-[12px] font-mono text-text-muted border-l border-border-hairline pl-4">
+                    Merchant: <span id="header-merchant-name" class="text-white font-medium">Trial Merchant</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Area -->
+    <main class="max-w-[1600px] mx-auto mt-[72px] p-8 flex-1 w-full space-y-10">

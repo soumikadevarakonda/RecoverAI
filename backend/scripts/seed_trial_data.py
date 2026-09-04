@@ -18,17 +18,22 @@ from app.models.recovery_campaign import RecoveryCampaign
 from app.domains.recovery.trial_evaluation import TRIAL_REFERENCE_TIME
 
 
-def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant") -> Merchant:
+def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merchant_id: UUID | None = None) -> Merchant:
     """
     Deterministically seeds a merchant with a realistic batch of synthetic payment,
     incident, and recovery attempt data.
     """
+    from uuid import UUID
     from sqlalchemy import select, delete
     from app.models.payment_event import PaymentEvent
 
+    DEFAULT_TRIAL_MERCHANT_ID = UUID("b614b90f-49fd-4d6a-8689-52d4d2878b03")
+    if merchant_id is None and merchant_name == "Trial Merchant":
+        merchant_id = DEFAULT_TRIAL_MERCHANT_ID
+
     # Identify the trial merchant using the deterministic name and clean up existing records
     existing_merchants = db.scalars(
-        select(Merchant).where(Merchant.name == merchant_name)
+        select(Merchant).where((Merchant.name == merchant_name) | (Merchant.id == merchant_id))
     ).all()
 
     for existing_merchant in existing_merchants:
@@ -75,7 +80,7 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant") -> M
     random.seed(42)
 
     # 1. Create merchant
-    merchant = Merchant(name=merchant_name)
+    merchant = Merchant(id=merchant_id, name=merchant_name) if merchant_id else Merchant(name=merchant_name)
     db.add(merchant)
     db.commit()
     db.refresh(merchant)
@@ -258,27 +263,32 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant") -> M
     # 8 failures concentrated under GATEWAY_ERROR, 2 as noise under other codes
     # 20 captured matching the GATEWAY_ERROR cohort
     curr_start = now - timedelta(minutes=30)
+    failed_cohort_amounts = [1250, 2400, 850, 3200, 1750, 2100, 950, 1500]
     for i in range(30):
         is_failed = (i < 10)
         if is_failed:
             if i < 8:
                 err_code = "GATEWAY_ERROR"
                 err_step = "payment_authorization"
+                pay_amount = failed_cohort_amounts[i]
             elif i == 8:
                 err_code = "BAD_REQUEST_ERROR"
                 err_step = "payment_authorization"
+                pay_amount = 10000
             else:
                 err_code = "INSUFFICIENT_FUNDS"
                 err_step = "payment_authorization"
+                pay_amount = 10000
         else:
             err_code = "GATEWAY_ERROR"
             err_step = "payment_authorization"
+            pay_amount = 10000
 
         pay = Payment(
             merchant_id=merchant.id,
             razorpay_payment_id=f"pay_curr_window_{i}_{random.randint(1000, 9999)}",
             status="failed" if is_failed else "captured",
-            amount=10000,
+            amount=pay_amount,
             currency="INR",
             method="upi",
             bank="HDFC",
@@ -298,5 +308,8 @@ if __name__ == "__main__":
         print("Seeding deterministic trial scenario data...")
         merchant = seed_trial_scenario(db)
         print(f"Successfully seeded Trial Merchant: '{merchant.name}' (ID: {merchant.id})")
+        from app.domains.recovery.trial_evaluation import evaluate_trial_scenario
+        eval_res = evaluate_trial_scenario(db, merchant.id)
+        print(f"Evaluated trial scenario: incident_detected={eval_res.incident_detected}, incident_id={eval_res.incident_id}, action={eval_res.selected_action}, expected_net_recovery={eval_res.expected_net_recovery_value}")
     finally:
         db.close()

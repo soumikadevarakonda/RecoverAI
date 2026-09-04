@@ -1,0 +1,144 @@
+        <!-- VIEW 3: DECISION ROOM (Autonomous Strategy & Guardrails) -->
+        <section id="view-decision" class="space-y-10 hidden max-w-5xl mx-auto">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border-hairline">
+                <div class="space-y-1">
+                    <span class="text-[11px] font-mono uppercase tracking-widest text-text-muted">Autonomous Strategy &amp; Guardrails</span>
+                    <h1 class="font-heading text-[38px] font-bold text-white tracking-tight leading-none">What is the safest, highest-ROI action?</h1>
+                    <p class="text-text-muted text-[15px] max-w-2xl font-body mt-1">
+                        "AI recommends. Guardrails authorize. Gateway verifies. RecoverAI learns."
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button id="btn-decision-action" onclick="handleDecisionPrimaryAction()" class="px-5 py-2.5 bg-accent-indigo text-white font-heading font-bold text-[13px] rounded hover:bg-opacity-90 transition-all flex items-center gap-2 shadow-sm">
+                        <span class="material-symbols-outlined text-[16px]">send</span> <span id="btn-decision-action-text">Execute Recovery</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recommendation Hero (Visually Dominant) -->
+            <div class="p-8 rounded-xl bg-surface-card border border-border-hairline inner-glow space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border-hairline pb-6">
+                    <div>
+                        <span class="text-[11px] font-mono uppercase tracking-widest text-accent-indigo font-bold block mb-1">RECOMMENDED ACTION</span>
+                        <div id="dec-action-hero" class="text-[36px] sm:text-[44px] font-heading font-extrabold text-white tracking-tight leading-none">
+                            RETRY
+                        </div>
+                        <p class="text-[14px] text-text-muted font-body mt-2">
+                            Strategy: Automated smart retry via alternate payment links.
+                        </p>
+                    </div>
+                    <div class="text-left md:text-right font-mono text-[12px]">
+                        <span class="text-text-subtle block uppercase">Recovery Plan ID</span>
+                        <span id="dec-recovery-id" class="text-white font-bold text-[14px]">rec_plan_01</span>
+                        <span id="dec-attempt-status" class="block mt-1 text-accent-indigo font-bold uppercase">READY</span>
+                    </div>
+                </div>
+
+                <!-- Clear Split: Historical Evidence vs Current Expectation -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
+                    <!-- 1. Historical Prior Evidence -->
+                    <div class="p-5 rounded-lg bg-surface-elevated border border-border-hairline space-y-3 font-mono">
+                        <span class="text-[11px] text-accent-cyan uppercase tracking-wider block font-bold">1. Historical Prior Evidence</span>
+                        <div class="space-y-2 text-[13px]">
+                            <div class="flex justify-between py-1 border-b border-border-hairline">
+                                <span class="text-text-subtle font-body">Comparable Cohorts</span>
+                                <span class="text-white font-bold">5 historical attempts</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-border-hairline">
+                                <span class="text-text-subtle font-body">Historical Recovery Rate</span>
+                                <span class="text-accent-cyan font-bold">100% (5/5 recovered)</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span class="text-text-subtle font-body">Evidence Calibration</span>
+                                <span class="text-white font-bold">Bayesian Prior Calibrated</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Current Incident Expectation -->
+                    <div class="p-5 rounded-lg bg-surface-elevated border border-border-hairline space-y-3 font-mono">
+                        <span class="text-[11px] text-accent-indigo uppercase tracking-wider block font-bold">2. Current Incident Expectation</span>
+                        <div class="space-y-2 text-[13px]">
+                            <div class="flex justify-between py-1 border-b border-border-hairline">
+                                <span class="text-text-subtle font-body">Revenue at Risk</span>
+                                <span id="dec-revenue-at-risk-label" class="text-white font-bold">₹14,000</span>
+                            </div>
+                            <div class="flex justify-between py-1 border-b border-border-hairline">
+                                <span class="text-text-subtle font-body">Incentive Cost</span>
+                                <span class="text-white font-bold">₹0 (Zero discount)</span>
+                            </div>
+                            <div class="flex justify-between py-1">
+                                <span class="text-text-subtle font-body">Expected Net Recovery</span>
+                                <span id="dec-expected-net" class="text-accent-indigo font-bold">₹14,000 (100% yield)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Payment Link Callout in Decision Room (when executed) -->
+                <div id="dec-link-callout" class="hidden p-4 rounded-lg bg-accent-cyan/10 border border-accent-cyan/30 flex justify-between items-center font-mono text-[13px]">
+                    <div class="space-y-1">
+                        <span class="text-accent-cyan font-bold block text-[11px] uppercase">Razorpay Payment Link Dispatched</span>
+                        <a id="dec-short-url-link" href="#" target="_blank" class="text-white hover:text-accent-cyan underline font-bold text-[14px]">—</a>
+                    </div>
+                    <a id="dec-pay-now-btn" href="#" target="_blank" class="px-4 py-2 bg-accent-cyan text-black font-heading font-bold text-[12px] rounded hover:bg-opacity-90 transition-all flex items-center gap-1.5 shadow-sm">
+                        Pay Test Mode <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+                    </a>
+                </div>
+
+                <!-- Rationale Explanation -->
+                <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-1 text-[13px] font-body">
+                    <span class="text-[11px] font-mono text-text-subtle uppercase tracking-wider font-semibold block">Strategic Rationale</span>
+                    <p class="text-text-muted leading-relaxed">
+                        Why Retry? The upstream authorization failure was caused by a temporary gateway connection spike at HDFC UPI. Customers have active intent and valid balances. Offering an instant retry link without discount incentives captures 100% net revenue with zero margin loss.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Governance Safety Barrier -->
+            <div class="p-6 rounded-xl bg-surface-card border border-border-hairline inner-glow space-y-4">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-accent-green text-[20px]">shield</span>
+                    <h3 class="font-heading text-[18px] font-bold text-white">Deterministic Governance &amp; Policy Guardrails</h3>
+                </div>
+                <p class="text-[13px] text-text-muted font-body">
+                    AI recommendations cannot execute until passing hardcoded merchant safety boundaries.
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 font-mono text-[12px] pt-2">
+                    <div class="p-3.5 rounded bg-surface-elevated border border-border-hairline space-y-1">
+                        <span class="text-[10px] text-text-subtle uppercase block font-mono">1. Action Whitelist</span>
+                        <span class="text-accent-green font-bold block flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">check</span> Allowed (retry)
+                        </span>
+                        <span class="text-[11px] text-text-muted">In merchant policy</span>
+                    </div>
+
+                    <div class="p-3.5 rounded bg-surface-elevated border border-border-hairline space-y-1">
+                        <span class="text-[10px] text-text-subtle uppercase block font-mono">2. Incentive Budget</span>
+                        <span class="text-accent-green font-bold block flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">check</span> ₹0 (&le; ₹1,000)
+                        </span>
+                        <span class="text-[11px] text-text-muted">Zero margin impact</span>
+                    </div>
+
+                    <div class="p-3.5 rounded bg-surface-elevated border border-border-hairline space-y-1">
+                        <span class="text-[10px] text-text-subtle uppercase block font-mono">3. Exposure Cap</span>
+                        <span class="text-accent-green font-bold block flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">check</span> &le; ₹20,000 / tx
+                        </span>
+                        <span class="text-[11px] text-text-muted">Within limits</span>
+                    </div>
+
+                    <div class="p-3.5 rounded bg-surface-elevated border border-border-hairline space-y-1">
+                        <span class="text-[10px] text-text-subtle uppercase block font-mono">4. Authorization Gate</span>
+                        <span id="dec-guardrail-status" class="text-accent-green font-bold block flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">verified</span> Permitted
+                        </span>
+                        <span class="text-[11px] text-text-muted">Auto-execution OK</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>

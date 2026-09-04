@@ -1,0 +1,153 @@
+        <!-- VIEW 1: COMMAND CENTER (Editorial Operating Surface) -->
+        <section id="view-command" class="py-6 space-y-16 block max-w-5xl mx-auto">
+            
+            <!-- Section Header & Question -->
+            <div class="space-y-3 border-b border-border-hairline pb-8">
+                <div class="flex items-center gap-3">
+                    <span id="cmd-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded text-[11px] font-medium tracking-wide uppercase bg-accent-coral/10 text-accent-coral border border-accent-coral/20 font-mono">
+                        <span class="w-1.5 h-1.5 rounded-full bg-accent-coral animate-pulse"></span>
+                        <span id="cmd-status-label">Active Degradation Detected</span>
+                    </span>
+                    <span class="text-[12px] text-text-muted font-mono" id="cmd-incident-id-display">ID: —</span>
+                </div>
+                <h1 class="font-heading text-[42px] sm:text-[50px] font-bold text-white tracking-tight leading-none">
+                    Where am I losing money right now?
+                </h1>
+                <p id="cmd-subtitle" class="text-text-muted text-[17px] max-w-2xl font-body leading-relaxed">
+                    Acute authorization failure spike detected in <span class="text-white font-medium">HDFC UPI</span> traffic. 8 customer checkouts failed upstream.
+                </p>
+            </div>
+
+            <!-- Visual Anchor: Revenue at Risk -->
+            <div class="space-y-10">
+                <div>
+                    <span class="text-[12px] font-body text-text-subtle uppercase tracking-widest block mb-2 font-medium">Revenue at Risk</span>
+                    <div id="cmd-revenue-at-risk" class="text-[80px] sm:text-[104px] font-heading font-bold text-white tracking-tight leading-none">
+                        ₹14,000
+                    </div>
+                    <div id="cmd-failed-payments" class="text-[20px] font-body text-text-muted mt-4 font-normal">
+                        Consequence: <span class="text-white font-medium">8 failed payments</span> &rarr; <span class="text-accent-coral font-medium">₹14,000 at risk</span>
+                    </div>
+                </div>
+
+                <!-- Incident Cohort & Rate Delta Strip (Clean, Unboxed 2-column) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-border-hairline">
+                    <div class="space-y-1.5">
+                        <span class="text-[11px] font-body text-text-subtle uppercase tracking-wider block font-medium">Degraded Cohort</span>
+                        <div id="cmd-cohort-channel" class="text-[28px] font-heading text-white font-semibold">
+                            HDFC · UPI
+                        </div>
+                        <p id="cmd-cohort-step" class="text-[14px] text-text-muted font-body">
+                            Authorization-step degradation in payment gateway integration
+                        </p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <span class="text-[11px] font-body text-text-subtle uppercase tracking-wider block font-medium">Failure Rate Elevation</span>
+                        <div class="flex items-baseline gap-3">
+                            <span id="cmd-curr-failure-rate" class="text-[28px] font-heading text-accent-coral font-bold">28.6%</span>
+                            <span id="cmd-baseline-failure-rate" class="text-[15px] font-body text-text-muted">vs 3.3% baseline</span>
+                            <span id="cmd-rate-delta" class="text-[13px] font-mono font-bold text-accent-coral px-2 py-0.5 rounded bg-accent-coral/10 border border-accent-coral/20">+25.2% pts</span>
+                        </div>
+                        <p id="cmd-rate-note" class="text-[14px] text-text-muted font-body">
+                            8.6x elevation above normal operating baseline
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progressive Reveal: WHY & EVIDENCE (Causal Slicing) -->
+            <div class="space-y-6 pt-10 border-t border-border-hairline">
+                <div class="space-y-2">
+                    <div class="text-[11px] font-mono text-accent-cyan uppercase tracking-wider font-semibold">
+                        Diagnosis &bull; Root Cause
+                    </div>
+                    <h2 id="cmd-diagnosis-title" class="font-heading text-[24px] sm:text-[28px] font-semibold text-white tracking-tight">
+                        Diagnosed Payment Authorization Degradation
+                    </h2>
+                    <p id="cmd-diagnosis-explanation" class="text-[15px] text-text-muted font-body leading-relaxed max-w-3xl">
+                        Deterministic root-cause synthesis indicates upstream gateway timeout errors specifically during customer authorization. The failure signature matches transient upstream bank connection timeouts rather than customer balance exhaustion.
+                    </p>
+                </div>
+
+                <!-- Causal Evidence Chain -->
+                <div class="p-6 rounded-lg bg-surface-card border border-border-hairline space-y-3">
+                    <div class="text-[11px] font-mono text-text-subtle uppercase tracking-wider font-medium">
+                        Causal Evidence Cluster
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-[14px]">
+                        <div>
+                            <span class="text-[11px] text-text-subtle block uppercase font-mono">Issuing Bank</span>
+                            <span id="cmd-evidence-bank" class="text-white font-medium text-[15px]">HDFC Bank</span>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-text-subtle block uppercase font-mono">Method</span>
+                            <span id="cmd-evidence-method" class="text-white font-medium text-[15px]">UPI</span>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-text-subtle block uppercase font-mono">Error Code</span>
+                            <span id="cmd-evidence-code" class="text-white font-mono text-[13px] bg-surface-elevated px-2 py-0.5 rounded border border-border-hairline inline-block mt-0.5">GATEWAY_ERROR</span>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-text-subtle block uppercase font-mono">Pipeline Stage</span>
+                            <span id="cmd-evidence-step" class="text-white font-mono text-[13px] bg-surface-elevated px-2 py-0.5 rounded border border-border-hairline inline-block mt-0.5">payment_authorization</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progressive Reveal: WHAT SHOULD RECOVERAI DO? -->
+            <div class="space-y-8 pt-10 border-t border-border-hairline">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+                    <div class="space-y-2 max-w-2xl">
+                        <div class="text-[11px] font-mono text-accent-indigo uppercase tracking-wider font-semibold">
+                            AI Recommendation &bull; Recovery Strategy
+                        </div>
+                        <h2 class="font-heading text-[24px] sm:text-[28px] font-semibold text-white tracking-tight">
+                            What should RecoverAI do?
+                        </h2>
+                        <p class="text-[15px] text-text-muted font-body leading-relaxed">
+                            Deploy targeted retry links directly to affected customers via alternate routing. Historical prior models indicate complete recovery yield for this degradation pattern.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-3 w-full md:w-auto">
+                        <button onclick="navigate('decision')" class="w-full md:w-auto px-6 py-3.5 bg-white text-black font-heading font-bold text-[14px] rounded hover:bg-white/90 transition-all flex items-center justify-center gap-2 shadow-sm">
+                            Open Decision Room <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Decision & Historical Evidence Strip -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div class="p-6 rounded-lg bg-surface-card border border-border-hairline space-y-2">
+                        <span class="text-[11px] font-mono text-text-subtle uppercase tracking-wider block font-medium">Recommended Action</span>
+                        <div id="cmd-action-name" class="text-[28px] font-heading font-bold text-white">Retry</div>
+                        <div class="text-[13px] text-text-muted font-body">Direct payment link recovery</div>
+                    </div>
+
+                    <div class="p-6 rounded-lg bg-surface-card border border-border-hairline space-y-2">
+                        <span class="text-[11px] font-mono text-text-subtle uppercase tracking-wider block font-medium">Historical Recovery Rate</span>
+                        <div id="cmd-hist-rate" class="text-[28px] font-heading font-bold text-accent-cyan">100%</div>
+                        <div id="cmd-hist-attempts" class="text-[13px] text-text-muted font-body">Observed rate across 5 attempts</div>
+                    </div>
+
+                    <div class="p-6 rounded-lg bg-surface-card border border-border-hairline space-y-2">
+                        <span class="text-[11px] font-mono text-text-subtle uppercase tracking-wider block font-medium">Expected Net Recovery</span>
+                        <div id="cmd-expected-recovery" class="text-[28px] font-heading font-bold text-accent-indigo">₹14,000</div>
+                        <div class="text-[13px] text-text-muted font-body">₹0 incentive cost &bull; 100% net yield</div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center pt-6 border-t border-border-hairline text-[13px] text-text-muted">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-accent-green"></span>
+                        <span id="cmd-guardrail-note">Guardrails passed: Execution permitted autonomously</span>
+                    </div>
+                    <button onclick="navigate('incidents')" class="hover:text-white font-medium flex items-center gap-1 transition-colors">
+                        Deep Telemetry &amp; Investigation <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+                    </button>
+                </div>
+            </div>
+
+        </section>

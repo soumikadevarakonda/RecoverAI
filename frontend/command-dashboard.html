@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RecoverAI - Command Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Manrope:wght@520;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-bright": "#1a191a",
+                        "on-secondary-fixed": "#001f21",
+                        "on-surface-variant": "#c6c5d8",
+                        "on-primary-fixed": "#000469",
+                        "primary-fixed-dim": "#bec2ff",
+                        "on-secondary-fixed-variant": "#004f57",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary": "#512100",
+                        "outline-variant": "#454655",
+                        "surface-variant": "#151416",
+                        "on-tertiary-fixed-variant": "#741500",
+                        "on-primary-fixed-variant": "#1f2bc8",
+                        "primary-container": "#7a85ff",
+                        "on-surface": "#e5e2e1",
+                        "tertiary-fixed-dim": "#ffb689",
+                        "background": "#111114",
+                        "on-tertiary-container": "#471e00",
+                        "surface-container": "#201f21",
+                        "inverse-on-surface": "#111011",
+                        "tertiary-fixed": "#ffdbc8",
+                        "on-background": "#e5e2e1",
+                        "tertiary": "#ffb689",
+                        "surface": "#111114",
+                        "error-container": "#91000a",
+                        "on-secondary-container": "#001e44",
+                        "surface-tint": "#bec2ff",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#151416",
+                        "surface-dim": "#111114",
+                        "primary-fixed": "#e0e0ff",
+                        "error": "#ffb4ab",
+                        "surface-container-lowest": "#0e0e0f",
+                        "surface-container-high": "#2a2a2b",
+                        "inverse-primary": "#1d4ae0",
+                        "secondary-fixed": "#92f1ff",
+                        "on-primary-container": "#000992",
+                        "secondary-fixed-dim": "#50d8e9",
+                        "on-secondary": "#00161c",
+                        "surface-container-low": "#1c1b1d",
+                        "outline": "#8f8fa1",
+                        "secondary": "#50d8e9",
+                        "primary": "#bec2ff",
+                        "on-tertiary-fixed": "#111100",
+                        "secondary-container": "#00b1c2",
+                        "tertiary-container": "#e0711d",
+                        "inverse-surface": "#e5e2e1",
+                        "on-primary": "#000ba6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "40px",
+                        "margin-safe": "12px",
+                        "gutter": "20px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "mono-data": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "h2": ["Manrope"],
+                        "h1": ["Manrope"],
+                        "h4": ["Manrope"],
+                        "h1": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "mono-data": ["11px", { "lineHeight": "1", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "1.5", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "h2": ["12px", { "lineHeight": "1.2", "letterSpacing": "-0.05em", "fontWeight": "520" }],
+                        "h1": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.05em", "fontWeight": "520" }],
+                        "h4": ["18px", { "lineHeight": "1.4", "letterSpacing": "-0.02em", "fontWeight": "520" }],
+                        "h1": ["24px", { "lineHeight": "1.2", "letterSpacing": "-0.04em", "fontWeight": "520" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #111114; color: #e5e2e1; font-family: 'Inter', sans-serif; }
+        .glass-panel { background: rgba(20, 21, 21, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid #1B1C1E; }
+        .card-inner-glow { box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1); }
+        .grid-bg { background-image: linear-gradient(to right, #1B1C1E 1px, transparent 1px), linear-gradient(to bottom, #1B1C1E 1px, transparent 1px); background-size: 40px 40px; }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col md:flex-row overflow-hidden">
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden md:flex flex-col h-full fixed left-0 top-0 z-40 w-64 pt-md pb-lg bg-surface-container-lowest dark:bg-surface-container-lowest border-r border-outline-variant dark:border-outline-variant">
+<div class="px-md mb-lg flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<div>
+<h1 class="font-h4 text-h4 text-on-surface">OPERATIONS</h1>
+<p class="font-mono-data text-mono-data text-on-surface-variant">v2.4.0-prod</p>
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-xs px-sm">
+<a class="group flex items-center gap-sm px-md py-xs text-secondary dark:text-secondary bg-surface-container-low border-r-2 border-secondary font-label-sm text-label-sm uppercase tracking-widest" href="signals-feed.html">
+<span class="material-symbols-outlined">terminal</span> Command
+            </a>
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all font-label-sm text-label-sm uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">sensors</span> Signals
+            </a>
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all font-label-sm text-label-sm uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">verified_user</span> Approvals
+            </a>
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all font-label-sm text-label-sm uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">analytics</span> Dashboards
+            </a>
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all font-label-sm text-label-sm uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">group</span> Customers
+            </a>
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all font-label-sm text-label-sm uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">description</span> Reports
+            </a>
+</div>
+<div class="px-md mt-auto flex flex-col gap-sm">
+<button class="bg-[#5E6BFF] text-[#F0F1F2] rounded py-sm px-md font-label-sm text-label-sm flex items-center justify-center gap-xs">
+                Launch Sandbox
+            </button>
+<div class="flex flex-col gap-xs mt-sm">
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">help</span> Docs
+                </a>
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm uppercase tracking-widest" href="#">
+<span class="material-symbols-outlined">contact_support</span> Support
+                </a>
+</div>
+<div class="mt-md border-t border-outline-variant pt-md flex items-center gap-sm">
+<img alt="User Avatar" class="w-8 h-8 rounded-full border border-outline-variant" src="https://lh1.googleusercontent.com/aida/ADBb0ujeDmVl0s-r-yH8ZVLWpJBzF1zYskAa1KJsN6HJWYEw-hxQRFqsJJgOTTvcAtFIERaxqhpKoUB7kXUV16wBnuUpRJgvrw1USrfY-R1FRB7CUyXgYP4trpU1KNXuenudL9_wKrE1NB5Ae9HCJvvRcRexcBsfmvpIEbDeNjaKE2ysWRSMohgyEXtEEnFPWwx7VKe1Hr0eO_kw7oDpF6ZsFfSecvUPnmtbqHqxouvfGsBStLdmMgR8n1gq1w"/>
+<div class="font-mono-data text-mono-data text-on-surface">System Admin</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 flex flex-col h-screen overflow-y-auto overflow-x-hidden bg-background">
+<!-- TopNavBar (Mobile mainly, but acts as header here) -->
+<header class="flex justify-between items-center h-12 px-md w-full sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-outline-variant dark:border-outline-variant md:hidden">
+<div class="font-h1 text-h1 font-bold tracking-tighter text-on-background dark:text-on-background">ROMER</div>
+<div class="flex items-center gap-md text-on-surface-variant">
+<span class="material-symbols-outlined cursor-pointer hover:text-on-surface transition-colors">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-on-surface transition-colors">settings</span>
+<button class="bg-surface-container border border-outline-variant text-on-surface px-sm py-xs rounded font-label-sm text-label-sm">Workspace</button>
+</div>
+</header>
+<div class="p-gutter flex flex-col gap-gutter flex-1">
+<!-- Page Header -->
+<div class="flex flex-col gap-xs mb-sm">
+<h1 class="font-h1 text-h1 text-on-surface">Payment Recovery Command</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Autonomous payment degradation detection, causal diagnosis, and revenue recovery</p>
+</div>
+<!-- Top Metrics Row -->
+<div class="grid grid-cols-1 md:grid-cols-1 gap-gutter">
+<!-- Metric 1 -->
+<div class="bg-[#101112] border border-[#1B1C1E] rounded p-md card-inner-glow relative overflow-hidden">
+<div class="absolute top-md right-md w-[6px] h-[6px] rounded-full bg-secondary"></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-sm">Signal Uptime</div>
+<div class="font-h2 text-h2 text-on-surface">₹80,000</div>
+<div class="font-mono-data text-mono-data text-[#9A9DA1] mt-xs">11 affected failed payments</div>
+</div>
+<!-- Metric 2 -->
+<div class="bg-[#101112] border border-[#1B1C1E] rounded p-md card-inner-glow relative overflow-hidden">
+<div class="absolute top-md right-md w-[6px] h-[6px] rounded-full bg-secondary"></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-sm">Approval Latency</div>
+<div class="font-h2 text-h2 text-on-surface">₹80,000</div>
+<div class="font-mono-data text-mono-data text-[#9A9DA1] mt-xs">Observed recovery rate: 100% (5/5 evidence)</div>
+</div>
+<!-- Metric 1 -->
+<div class="bg-[#101112] border border-[#1B1C1E] rounded p-md card-inner-glow relative overflow-hidden">
+<div class="absolute top-md right-md w-[6px] h-[6px] rounded-full bg-error"></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-sm">Open Incidents</div>
+<div class="font-h2 text-h2 text-on-surface">1</div>
+<div class="font-mono-data text-mono-data text-error mt-xs">HDFC UPI • GATEWAY_ERROR</div>
+</div>
+</div>
+<!-- Central Grid Area -->
+<div class="grid grid-cols-1 lg:grid-cols-1 gap-gutter flex-1 min-h-0">
+<!-- Main Graph Area (Span 2 cols) -->
+<div class="lg:col-span-2 bg-[#151617] border border-[#212426] rounded flex flex-col overflow-hidden relative">
+<div class="p-sm px-md border-b border-[#1B1C1E] flex justify-between items-center bg-[#101112]">
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest flex items-center gap-sm">
+<span class="material-symbols-outlined text-[16px]">monitoring</span> Live Telemetry
+                        </div>
+<div class="flex bg-[#070708] rounded p-[2px] border border-[#1B1C1E]">
+<button class="px-sm py-xs text-[10px] uppercase text-on-surface-variant hover:text-on-surface">1H</button>
+<button class="px-sm py-xs text-[10px] uppercase bg-[#191A1C] text-on-surface rounded shadow-sm">24H</button>
+<button class="px-sm py-xs text-[10px] uppercase text-on-surface-variant hover:text-on-surface">7D</button>
+</div>
+</div>
+<div class="flex-1 grid-bg p-md relative overflow-hidden flex flex-col justify-end">
+<!-- Mock Graph lines using Tailwind Gradients/Divs for visual representation -->
+<div class="absolute inset-0 opacity-20 pointer-events-none" style="background: radial-gradient(circle at 50% 50%, rgba(94, 107, 255, 0.2) 0%, transparent 70%);"></div>
+<!-- Axis Labels -->
+<div class="absolute left-md top-md bottom-md flex flex-col justify-between font-mono-data text-[10px] text-outline-variant">
+<span>100k</span>
+<span>75k</span>
+<span>50k</span>
+<span>25k</span>
+<span>0</span>
+</div>
+<!-- Graph Canvas Placeholder -->
+<div class="w-full h-full relative ml-lg mt-md">
+<!-- Line 1 Cyan -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none">
+<path d="M0,80 Q20,60 40,70 T80,40 T120,50 T160,20 T200,10" fill="none" stroke="#50d8e9" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+</svg>
+<!-- Line 2 Violet -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none">
+<path d="M0,90 Q10,80 60,85 T100,50 T140,60 T180,10 T200,40" fill="none" opacity="0.7" stroke="#7a85ff" stroke-width="1.5" vector-effect="non-scaling-stroke"></path>
+</svg>
+</div>
+<!-- X Axis Labels -->
+<div class="w-full border-t border-[#1B1C1E] mt-sm pt-xs flex justify-between font-mono-data text-[10px] text-outline-variant ml-lg pr-lg">
+<span>00:00</span>
+<span>04:00</span>
+<span>08:00</span>
+<span>12:00</span>
+<span>16:00</span>
+<span>20:00</span>
+</div>
+</div>
+</div>
+<!-- Right Side List (Span 1 col) -->
+<div class="bg-[#101112] border border-[#212426] rounded flex flex-col overflow-hidden">
+<div class="p-sm px-md border-b border-[#1B1C1E] flex justify-between items-center">
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest flex items-center gap-sm">
+<span class="material-symbols-outlined text-[16px]">list_alt</span> Signal Status
+                        </div>
+</div>
+<div class="flex-1 overflow-y-auto">
+<!-- List Item 1 -->
+<div class="px-md py-sm border-b border-[#1B1C1E] hover:bg-[#151617] flex justify-between items-center group cursor-pointer">
+<div class="flex items-center gap-sm">
+<div class="w-[6px] h-[6px] rounded-full bg-secondary"></div>
+<div class="font-mono-data text-mono-data text-on-surface">HDFC • UPI (GATEWAY_ERROR)</div>
+</div>
+<div class="font-mono-data text-[11px] text-on-surface-variant group-hover:text-[#5E6BFF]">Online</div>
+</div>
+<!-- List Item 2 -->
+<div class="px-md py-sm border-b border-[#1B1C1E] hover:bg-[#151617] flex justify-between items-center group cursor-pointer">
+<div class="flex items-center gap-sm">
+<div class="w-[6px] h-[6px] rounded-full bg-secondary"></div>
+<div class="font-mono-data text-mono-data text-on-surface">SBI • UPI (GATEWAY_ERROR)</div>
+</div>
+<div class="font-mono-data text-[11px] text-on-surface-variant group-hover:text-[#5E6BFF]">Resolved (12h ago)</div>
+</div>
+<!-- List Item 1 -->
+<div class="px-md py-sm border-b border-[#1B1C1E] hover:bg-[#151617] flex justify-between items-center group cursor-pointer bg-error-container/10">
+<div class="flex items-center gap-sm">
+<div class="w-[6px] h-[6px] rounded-full bg-error"></div>
+<div class="font-mono-data text-mono-data text-error">ICICI • NETBANKING</div>
+</div>
+<div class="font-mono-data text-[11px] text-error">Degraded (11 fails)</div>
+</div>
+<!-- List Item 4 -->
+<div class="px-md py-sm border-b border-[#1B1C1E] hover:bg-[#151617] flex justify-between items-center group cursor-pointer">
+<div class="flex items-center gap-sm">
+<div class="w-[6px] h-[6px] rounded-full bg-secondary"></div>
+<div class="font-mono-data text-mono-data text-on-surface">AXIS • CARD</div>
+</div>
+<div class="font-mono-data text-[11px] text-on-surface-variant group-hover:text-[#5E6BFF]">Online</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Row: Table & Feed -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter h-64">
+<!-- Team Queue Table -->
+<div class="bg-[#101112] border border-[#212426] rounded flex flex-col overflow-hidden">
+<div class="p-sm px-md border-b border-[#1B1C1E] flex justify-between items-center">
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Resolved (12h ago)s</div>
+<button class="text-[#9A9DA1] hover:text-on-surface font-label-sm text-[10px] uppercase">View All</button>
+</div>
+<div class="flex-1 overflow-y-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-[#1B1C1E] bg-[#151617]">
+<th class="py-xs px-md font-label-sm text-[10px] text-outline-variant uppercase">Req ID</th>
+<th class="py-xs px-md font-label-sm text-[10px] text-outline-variant uppercase">Type</th>
+<th class="py-xs px-md font-label-sm text-[10px] text-outline-variant uppercase">Status</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-[#1B1C1E] hover:bg-[#151617] h-[12px]">
+<td class="py-xs px-md font-mono-data text-[12px] text-on-surface">REQ-992</td>
+<td class="py-xs px-md font-body-md text-[12px] text-on-surface-variant">Retry Recommendation (₹80,000 ENRV)</td>
+<td class="py-xs px-md"><span class="px-xs py-[2px] bg-[#2a2a2b] border border-[#454655] rounded text-[10px] text-on-surface-variant uppercase">Awaiting</span></td>
+</tr>
+<tr class="border-b border-[#1B1C1E] hover:bg-[#151617] h-[12px]">
+<td class="py-xs px-md font-mono-data text-[12px] text-on-surface">REQ-991</td>
+<td class="py-xs px-md font-body-md text-[12px] text-on-surface-variant">Grace Period (₹10,000 Recovered)</td>
+<td class="py-xs px-md"><span class="px-xs py-[2px] bg-[#2a2a2b] border border-[#454655] rounded text-[10px] text-on-surface-variant uppercase">Awaiting</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Event Feed -->
+<div class="bg-[#101112] border border-[#212426] rounded flex flex-col overflow-hidden">
+<div class="p-sm px-md border-b border-[#1B1C1E] flex justify-between items-center">
+<div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Decision Log</div>
+</div>
+<div class="flex-1 overflow-y-auto p-md flex flex-col gap-sm">
+<div class="flex gap-sm">
+<div class="mt-xs text-outline-variant"><span class="material-symbols-outlined text-[14px]">commit</span></div>
+<div>
+<div class="font-mono-data text-[12px] text-on-surface">Config rolled back on HDFC • UPI (GATEWAY_ERROR)</div>
+<div class="font-mono-data text-[10px] text-[#9A9DA1]">RecoverAI Strategist • Selected: retry • ENRV: ₹80,000 • Just now</div>
+</div>
+</div>
+<div class="flex gap-sm">
+<div class="mt-xs text-outline-variant"><span class="material-symbols-outlined text-[14px]">vpn_key</span></div>
+<div>
+<div class="font-mono-data text-[12px] text-on-surface">Historical evidence matched: 5 retry attempts (100% success)</div>
+<div class="font-mono-data text-[10px] text-[#9A9DA1]">Auto-policy • 15m ago</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

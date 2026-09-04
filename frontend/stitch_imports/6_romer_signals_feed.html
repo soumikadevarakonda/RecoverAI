@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Signals - ROMER Operations</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Manrope:wght@520&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-bright": "#3a393a",
+                      "on-secondary-fixed": "#001f23",
+                      "on-surface-variant": "#c6c5d8",
+                      "on-primary-fixed": "#000469",
+                      "primary-fixed-dim": "#bec2ff",
+                      "on-secondary-fixed-variant": "#004f57",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary": "#512300",
+                      "outline-variant": "#454655",
+                      "surface-variant": "#353436",
+                      "on-tertiary-fixed-variant": "#743500",
+                      "on-primary-fixed-variant": "#1f2bc8",
+                      "primary-container": "#7a85ff",
+                      "on-surface": "#e5e2e3",
+                      "tertiary-fixed-dim": "#ffb689",
+                      "background": "#131314",
+                      "on-tertiary-container": "#471e00",
+                      "surface-container": "#201f21",
+                      "inverse-on-surface": "#313031",
+                      "tertiary-fixed": "#ffdbc8",
+                      "on-background": "#e5e2e3",
+                      "tertiary": "#ffb689",
+                      "surface": "#131314",
+                      "error-container": "#93000a",
+                      "on-secondary-container": "#003e44",
+                      "surface-tint": "#bec2ff",
+                      "on-error": "#690005",
+                      "surface-container-highest": "#353436",
+                      "surface-dim": "#131314",
+                      "primary-fixed": "#e0e0ff",
+                      "error": "#ffb4ab",
+                      "surface-container-lowest": "#0e0e0f",
+                      "surface-container-high": "#2a2a2b",
+                      "inverse-primary": "#3d4ae0",
+                      "secondary-fixed": "#92f1ff",
+                      "on-primary-container": "#000992",
+                      "secondary-fixed-dim": "#50d8e9",
+                      "on-secondary": "#00363c",
+                      "surface-container-low": "#1c1b1d",
+                      "outline": "#8f8fa1",
+                      "secondary": "#50d8e9",
+                      "primary": "#bec2ff",
+                      "on-tertiary-fixed": "#311300",
+                      "secondary-container": "#00b1c2",
+                      "tertiary-container": "#e0731d",
+                      "inverse-surface": "#e5e2e3",
+                      "on-primary": "#000ba6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "xs": "4px",
+                      "sm": "8px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "xl": "40px",
+                      "margin-safe": "32px",
+                      "gutter": "20px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "mono-data": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "h2": [
+                              "Manrope"
+                      ],
+                      "h1": [
+                              "Manrope"
+                      ],
+                      "h4": [
+                              "Manrope"
+                      ],
+                      "h3": [
+                              "Manrope"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "mono-data": [
+                              "13px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "h2": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.05em",
+                                      "fontWeight": "520"
+                              }
+                      ],
+                      "h1": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.05em",
+                                      "fontWeight": "520"
+                              }
+                      ],
+                      "h4": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "520"
+                              }
+                      ],
+                      "h3": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "520"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        body { background-color: #131314; }
+        .border-layout { border-color: #232426; }
+        .border-internal { border-color: #1B1C1E; }
+        .bg-panel { background-color: #101112; }
+        .bg-panel-alt { background-color: #151617; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #353436; border-radius: 4px; }
+    </style>
+</head>
+<body class="text-on-background bg-background h-screen flex flex-col overflow-hidden">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center h-12 px-md w-full sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-outline-variant dark:border-outline-variant text-primary dark:text-primary">
+<div class="flex items-center gap-md">
+<div class="font-h3 text-h3 font-bold tracking-tighter text-on-background dark:text-on-background">ROMER</div>
+<div class="hidden md:flex items-center bg-surface-container-low border border-outline-variant rounded px-sm py-xs h-8 ml-xl">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px] mr-xs" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-md font-body-md text-on-surface placeholder:text-outline p-0 w-64 h-full outline-none" placeholder="Search operations..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-sm">
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container dark:hover:bg-surface-container transition-colors cursor-pointer active:opacity-80 text-on-surface-variant dark:text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container dark:hover:bg-surface-container transition-colors cursor-pointer active:opacity-80 text-on-surface-variant dark:text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+<button class="h-8 px-sm bg-surface-container border border-outline-variant rounded flex items-center justify-center font-label-sm text-label-sm text-on-surface hover:bg-surface-container-high transition-colors">
+                Workspace
+            </button>
+<img alt="User avatar" class="w-8 h-8 rounded-full border border-outline-variant" src="https://lh3.googleusercontent.com/aida/ADBb0ujeDmVl0s-r-yH8ZVLWpJBzF3zYskAa1KJsN6HJWYEw-hxQRFqsJJgOTTvcAtFIERaxqhpKoUB7kXUV36wBnuUpRJgvrw1USrfY-R3FRB7CUyXgYP4trpU3KNXuenudL9_wKrE1NB5Ae9HCJvvRcRexcBsfmvpIEbDeNjaKE2ysWRSMohgyEXtEEnFPWwx7VKe3Hr0eO_kw7oDpF6ZsFfSecvUPnmtbqHqxouvfGsBStLdmMgR8n3gq1w"/>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-full fixed left-0 top-12 z-40 w-64 pt-md pb-lg bg-surface-container-lowest dark:bg-surface-container-lowest border-r border-outline-variant dark:border-outline-variant">
+<div class="px-md mb-xl flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-container-high border border-outline-variant flex items-center justify-center">
+<div class="w-2 h-2 rounded-full bg-secondary-fixed"></div>
+</div>
+<div>
+<div class="font-h4 text-h4 text-on-surface">OPERATIONS</div>
+<div class="font-mono-data text-mono-data text-on-surface-variant">v2.4.0-stable</div>
+</div>
+</div>
+<div class="flex flex-col gap-xs flex-1">
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="terminal">terminal</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Command</span>
+</a>
+<a class="group flex items-center gap-sm px-md py-xs text-secondary dark:text-secondary bg-surface-container-low border-r-2 border-secondary hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="sensors">sensors</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Signals</span>
+</a>
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="verified_user">verified_user</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Approvals</span>
+</a>
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="analytics">analytics</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Dashboards</span>
+</a>
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="group">group</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Customers</span>
+</a>
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="description">description</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Reports</span>
+</a>
+</div>
+<div class="px-md mt-auto pt-lg">
+<button class="w-full bg-[#5E6BFF] text-[#F0F1F2] h-8 rounded flex items-center justify-center font-label-sm text-label-sm hover:opacity-90 transition-opacity mb-md">
+                    Launch Terminal
+                </button>
+<div class="flex flex-col gap-xs">
+<a class="group flex items-center gap-sm py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="help">help</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Docs</span>
+</a>
+<a class="group flex items-center gap-sm py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-all" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="contact_support">contact_support</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Support</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 flex flex-col h-[calc(100vh-48px)] bg-background">
+<!-- Page Header -->
+<div class="px-xl py-lg border-b border-internal">
+<h1 class="font-h1 text-h1 text-on-surface mb-xs">Signals</h1>
+<p class="font-body-md text-body-md text-outline">Scattered inputs normalized into one operating layer</p>
+</div>
+<!-- Filters Bar -->
+<div class="px-xl py-sm border-b border-internal bg-panel flex items-center gap-md">
+<button class="flex items-center gap-xs px-sm py-xs border border-internal rounded bg-[#101112] text-on-surface font-label-sm text-label-sm hover:border-[#5E6BFF] transition-colors">
+<span class="text-outline">Source:</span> All
+                    <span class="material-symbols-outlined text-[16px]" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-xs px-sm py-xs border border-internal rounded bg-[#101112] text-on-surface font-label-sm text-label-sm hover:border-[#5E6BFF] transition-colors">
+<span class="text-outline">Severity:</span> Critical, High
+                    <span class="material-symbols-outlined text-[16px]" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-xs px-sm py-xs border border-internal rounded bg-[#101112] text-on-surface font-label-sm text-label-sm hover:border-[#5E6BFF] transition-colors">
+<span class="text-outline">Owner:</span> Unassigned
+                    <span class="material-symbols-outlined text-[16px]" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+<button class="flex items-center gap-xs px-sm py-xs border border-internal rounded bg-[#101112] text-on-surface font-label-sm text-label-sm hover:border-[#5E6BFF] transition-colors">
+<span class="text-outline">Status:</span> Open
+                    <span class="material-symbols-outlined text-[16px]" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+<div class="ml-auto flex items-center gap-sm text-outline font-mono-data text-mono-data">
+<span class="material-symbols-outlined text-[16px]" data-icon="refresh">refresh</span>
+                    Updated 12s ago
+                </div>
+</div>
+<!-- Content Area (Split) -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Left: Signal Stream (Table) -->
+<div class="flex-1 overflow-y-auto custom-scrollbar border-r border-layout bg-background p-gutter">
+<div class="bg-panel rounded border border-internal overflow-hidden">
+<!-- Table Header -->
+<div class="grid grid-cols-[auto_1fr_1fr_100px_100px_1fr_120px] gap-sm px-md py-sm border-b border-internal bg-surface-container-lowest font-label-sm text-label-sm text-outline uppercase tracking-wider items-center">
+<div class="w-4"></div> <!-- Checkbox space -->
+<div>Signal</div>
+<div>Source</div>
+<div>Severity</div>
+<div>Confidence</div>
+<div>Owner</div>
+<div class="text-right">Last Update</div>
+</div>
+<!-- Table Rows -->
+<div class="flex flex-col">
+<!-- Row 1 (Selected) -->
+<div class="grid grid-cols-[auto_1fr_1fr_100px_100px_1fr_120px] gap-sm px-md h-10 border-b border-internal bg-panel-alt hover:bg-surface-container cursor-pointer items-center relative group">
+<div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#5E6BFF]"></div>
+<div class="w-4 h-4 border border-outline-variant rounded bg-[#101112]"></div>
+<div class="font-mono-data text-mono-data text-on-surface">LATENCY_SPIKE</div>
+<div class="font-body-md text-body-md text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="cloud">cloud</span> AWS-US-EAST
+                                </div>
+<div class="flex items-center gap-xs">
+<div class="w-1.5 h-1.5 rounded-full bg-error"></div>
+<span class="font-label-sm text-label-sm text-error">CRITICAL</span>
+</div>
+<div class="font-mono-data text-mono-data text-on-surface">98%</div>
+<div class="font-body-md text-body-md text-outline">Unassigned</div>
+<div class="font-mono-data text-mono-data text-outline text-right">2m ago</div>
+</div>
+<!-- Row 2 -->
+<div class="grid grid-cols-[auto_1fr_1fr_100px_100px_1fr_120px] gap-sm px-md h-10 border-b border-internal bg-panel hover:bg-surface-container cursor-pointer items-center group">
+<div class="w-4 h-4 border border-outline-variant rounded bg-[#101112]"></div>
+<div class="font-mono-data text-mono-data text-on-surface">BILLING_DRIFT</div>
+<div class="font-body-md text-body-md text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="payments">payments</span> Stripe-Prod
+                                </div>
+<div class="flex items-center gap-xs">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></div>
+<span class="font-label-sm text-label-sm text-tertiary-container">HIGH</span>
+</div>
+<div class="font-mono-data text-mono-data text-on-surface">84%</div>
+<div class="font-body-md text-body-md text-on-surface">FinOps Team</div>
+<div class="font-mono-data text-mono-data text-outline text-right">14m ago</div>
+</div>
+<!-- Row 3 -->
+<div class="grid grid-cols-[auto_1fr_1fr_100px_100px_1fr_120px] gap-sm px-md h-10 border-b border-internal bg-panel hover:bg-surface-container cursor-pointer items-center group">
+<div class="w-4 h-4 border border-outline-variant rounded bg-[#101112]"></div>
+<div class="font-mono-data text-mono-data text-on-surface">VECTOR_SYNC</div>
+<div class="font-body-md text-body-md text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="database">database</span> Pinecone-EU
+                                </div>
+<div class="flex items-center gap-xs">
+<div class="w-1.5 h-1.5 rounded-full bg-secondary"></div>
+<span class="font-label-sm text-label-sm text-secondary">MODERATE</span>
+</div>
+<div class="font-mono-data text-mono-data text-on-surface">62%</div>
+<div class="font-body-md text-body-md text-outline">Unassigned</div>
+<div class="font-mono-data text-mono-data text-outline text-right">1h ago</div>
+</div>
+<!-- Additional Rows to fill out density -->
+<div class="grid grid-cols-[auto_1fr_1fr_100px_100px_1fr_120px] gap-sm px-md h-10 border-b border-internal bg-panel hover:bg-surface-container cursor-pointer items-center group">
+<div class="w-4 h-4 border border-outline-variant rounded bg-[#101112]"></div>
+<div class="font-mono-data text-mono-data text-on-surface">AUTH_TIMEOUT</div>
+<div class="font-body-md text-body-md text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="lock">lock</span> Auth0-Main
+                                </div>
+<div class="flex items-center gap-xs">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></div>
+<span class="font-label-sm text-label-sm text-tertiary-container">HIGH</span>
+</div>
+<div class="font-mono-data text-mono-data text-on-surface">91%</div>
+<div class="font-body-md text-body-md text-on-surface">SecOps</div>
+<div class="font-mono-data text-mono-data text-outline text-right">3h ago</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right: Signal Inspector -->
+<div class="w-[400px] flex-shrink-0 bg-panel-alt overflow-y-auto custom-scrollbar flex flex-col relative">
+<!-- Inspector Shimmer -->
+<div class="absolute top-0 left-0 right-0 h-[1px] bg-white/10"></div>
+<div class="p-lg border-b border-internal flex flex-col gap-md">
+<div class="flex justify-between items-start">
+<div>
+<div class="flex items-center gap-xs mb-xs">
+<div class="w-1.5 h-1.5 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.4)]"></div>
+<span class="font-label-sm text-label-sm text-error uppercase">Critical</span>
+</div>
+<h2 class="font-h3 text-h3 text-on-surface font-mono-data">LATENCY_SPIKE</h2>
+<p class="font-body-md text-body-md text-outline mt-xs">API Gateway response time exceeded 2000ms threshold.</p>
+</div>
+<button class="text-outline hover:text-on-surface">
+<span class="material-symbols-outlined" data-icon="close">close</span>
+</button>
+</div>
+<div class="flex gap-sm">
+<button class="flex-1 bg-[#5E6BFF] text-[#F0F1F2] h-8 rounded flex items-center justify-center font-label-sm text-label-sm hover:opacity-90 transition-opacity">
+                                Acknowledge
+                            </button>
+<button class="flex-1 bg-transparent border border-[#232426] text-[#F0F1F2] h-8 rounded flex items-center justify-center font-label-sm text-label-sm hover:bg-surface-container transition-colors">
+                                Route to Owner
+                            </button>
+<button class="w-8 h-8 bg-transparent border border-[#232426] text-[#F0F1F2] rounded flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[16px]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</div>
+<div class="p-lg flex flex-col gap-lg">
+<!-- Confidence Score Card -->
+<div class="bg-panel rounded border border-internal p-md relative overflow-hidden">
+<div class="absolute top-0 left-0 right-0 h-[1px] bg-white/5"></div>
+<h3 class="font-label-sm text-label-sm text-outline uppercase tracking-widest mb-md flex justify-between">
+                                Signal Confidence
+                                <span class="material-symbols-outlined text-[14px]" data-icon="info">info</span>
+</h3>
+<div class="flex items-baseline gap-sm">
+<span class="font-h1 text-h1 text-on-surface">98%</span>
+<span class="font-body-md text-body-md text-error flex items-center">
+<span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span> +12%
+                                </span>
+</div>
+<!-- Mini Trend Chart (Visual Simulation) -->
+<div class="h-12 mt-md flex items-end gap-[2px] opacity-80">
+<div class="flex-1 bg-outline-variant h-[20%]"></div>
+<div class="flex-1 bg-outline-variant h-[25%]"></div>
+<div class="flex-1 bg-outline-variant h-[22%]"></div>
+<div class="flex-1 bg-outline-variant h-[30%]"></div>
+<div class="flex-1 bg-outline-variant h-[28%]"></div>
+<div class="flex-1 bg-outline-variant h-[35%]"></div>
+<div class="flex-1 bg-outline-variant h-[40%]"></div>
+<div class="flex-1 bg-error h-[80%]"></div>
+<div class="flex-1 bg-error h-[95%]"></div>
+<div class="flex-1 bg-error h-[100%]"></div>
+</div>
+</div>
+<!-- Details Grid -->
+<div class="bg-panel rounded border border-internal p-md relative overflow-hidden">
+<div class="absolute top-0 left-0 right-0 h-[1px] bg-white/5"></div>
+<h3 class="font-label-sm text-label-sm text-outline uppercase tracking-widest mb-md border-b border-internal pb-xs">Context</h3>
+<div class="grid grid-cols-[100px_1fr] gap-y-sm font-mono-data text-mono-data">
+<div class="text-outline">Source</div>
+<div class="text-on-surface text-right">AWS-US-EAST</div>
+<div class="text-outline">Service</div>
+<div class="text-on-surface text-right">user-auth-api</div>
+<div class="text-outline">Detected</div>
+<div class="text-on-surface text-right">14:02:45 UTC</div>
+<div class="text-outline">Duration</div>
+<div class="text-on-surface text-right">4m 12s</div>
+</div>
+</div>
+<!-- Related Approvals -->
+<div class="bg-panel rounded border border-internal p-md relative overflow-hidden">
+<div class="absolute top-0 left-0 right-0 h-[1px] bg-white/5"></div>
+<h3 class="font-label-sm text-label-sm text-outline uppercase tracking-widest mb-md border-b border-internal pb-xs">Related Approvals</h3>
+<div class="flex flex-col gap-sm">
+<div class="flex items-center justify-between border border-internal rounded p-sm bg-surface-container-low hover:bg-surface-container cursor-pointer transition-colors">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="sync_alt">sync_alt</span>
+<div>
+<div class="font-mono-data text-mono-data text-on-surface">REQ-8892</div>
+<div class="font-label-sm text-label-sm text-outline">Scale up API Nodes</div>
+</div>
+</div>
+<span class="font-label-sm text-label-sm px-xs py-[2px] bg-secondary-container/20 text-secondary border border-secondary/30 rounded">PENDING</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RecoverAI - Trial Scenario Evaluator Sandbox</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;520;600;700&amp;family=Inter:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#e0e0ff",
+                        "on-primary": "#000ba6",
+                        "tertiary-fixed-dim": "#ffb689",
+                        "secondary-fixed": "#92f1ff",
+                        "secondary-container": "#00b1c2",
+                        "on-tertiary-fixed": "#311300",
+                        "background": "#131314",
+                        "primary": "#bec2ff",
+                        "on-secondary-container": "#003e44",
+                        "tertiary": "#ffb689",
+                        "on-background": "#e5e2e3",
+                        "error": "#ffb4ab",
+                        "primary-container": "#7a85ff",
+                        "primary-fixed-dim": "#bec2ff",
+                        "surface-tint": "#bec2ff",
+                        "on-secondary-fixed": "#001f23",
+                        "on-secondary": "#00363c",
+                        "on-surface": "#e5e2e3",
+                        "on-tertiary-fixed-variant": "#743500",
+                        "on-primary-fixed-variant": "#1f2bc8",
+                        "surface-dim": "#131314",
+                        "on-primary-fixed": "#000469",
+                        "outline": "#8f8fa1",
+                        "inverse-on-surface": "#313031",
+                        "surface-container": "#201f21",
+                        "secondary": "#50d8e9",
+                        "on-error-container": "#ffdad6",
+                        "surface": "#131314",
+                        "inverse-surface": "#e5e2e3",
+                        "on-primary-container": "#000992",
+                        "surface-container-lowest": "#0e0e0f",
+                        "outline-variant": "#454655",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#353436",
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-variant": "#353436",
+                        "on-tertiary": "#512300",
+                        "tertiary-container": "#e0731d",
+                        "on-surface-variant": "#c6c5d8",
+                        "surface-bright": "#3a393a",
+                        "on-tertiary-container": "#471e00",
+                        "surface-container-high": "#2a2a2b",
+                        "surface-container-low": "#1c1b1d",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#50d8e9",
+                        "inverse-primary": "#3d4ae0",
+                        "on-secondary-fixed-variant": "#004f57",
+                        "custom-bg": "#070708",
+                        "custom-divider": "#232426",
+                        "custom-card-bg": "#101112",
+                        "custom-sidebar": "#0d0e0f",
+                        "custom-panel": "#111214",
+                        "custom-text-muted": "#9A9DA3",
+                        "custom-btn-primary": "#5E6BFF",
+                        "custom-btn-text": "#F0F1F2",
+                        "custom-divider-light": "#1B1C1E"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xl": "40px",
+                        "gutter": "20px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "margin-safe": "32px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "h3": ["Manrope"],
+                        "h2": ["Manrope"],
+                        "body-md": ["Inter"],
+                        "h4": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "mono-data": ["Inter"],
+                        "h1": ["Manrope"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "h3": ["24px", { "lineHeight": "1.2", "letterSpacing": "-0.04em", "fontWeight": "520" }],
+                        "h2": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.05em", "fontWeight": "520" }],
+                        "body-md": ["14px", { "lineHeight": "1.5", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "h4": ["18px", { "lineHeight": "1.4", "letterSpacing": "-0.02em", "fontWeight": "520" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "mono-data": ["13px", { "lineHeight": "1", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+                        "h1": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.05em", "fontWeight": "520" }],
+                        "label-sm": ["12px", { "lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "hero-headline": ["76px", { "lineHeight": "1.1", "letterSpacing": "-0.055em", "fontWeight": "520" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #070708; color: #e5e2e3; }
+        .glass-panel { background: rgba(16, 17, 18, 0.8); backdrop-filter: blur(20px); }
+        .inner-glow { box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+<body class="font-body-md antialiased selection:bg-custom-btn-primary selection:text-white">
+<!-- TopAppBar -->
+<header class="bg-surface-container-lowest dark:bg-surface-container-lowest docked full-width top-0 h-20 border-b border-outline-variant dark:border-outline-variant flat no shadows z-50 sticky">
+<div class="flex justify-between items-center w-full px-margin-safe max-w-[1728px] mx-auto h-20">
+<div class="flex items-center gap-sm">
+<img alt="Lumio Logo Mark" class="w-[28px] h-[28px]" data-alt="A striking digital installation art piece featuring glowing, generative geometric shapes suspended in a vast, minimalist gallery space. The room is illuminated by high-key, soft white lighting that creates a bright, modern light-mode aesthetic. The artwork relies on a sophisticated palette of deep blacks and pristine whites, punctuated by intense accents of vibrant red. The mood is serene yet technologically advanced." src="data:image/png;base64,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"/>
+<span class="font-h3 text-h3 font-bold tracking-tight text-on-surface dark:text-on-surface">RecoverAI</span>
+</div>
+<nav class="hidden md:flex gap-lg h-full items-center">
+<a class="font-body-md text-body-md text-primary dark:text-primary border-b-2 border-primary pb-1 hover:text-primary dark:hover:text-primary transition-colors duration-200" href="#">Platform</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-colors duration-200" href="#">Dashboards</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-colors duration-200" href="#">Customers</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-colors duration-200" href="#">Pricing</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-colors duration-200" href="#">Resources</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary transition-colors duration-200" href="#">Contact</a>
+</nav>
+<div class="flex gap-md">
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors duration-200 px-md py-sm rounded border border-custom-divider" href="#">Log in</a>
+<a class="font-body-md text-body-md bg-custom-btn-primary text-custom-btn-text px-md py-sm rounded hover:bg-opacity-90 transition-colors duration-200" href="#">Start free</a>
+</div>
+</div>
+</header>
+<main class="max-w-[1728px] mx-auto px-margin-safe pb-32">
+<!-- Section 1: Hero -->
+<section class="pt-32 pb-24 text-center max-w-4xl mx-auto">
+<h1 class="font-h3 text-hero-headline text-on-surface mb-md">Trial Scenario Evaluator Sandbox</h1>
+<p class="font-body-lg text-[19px] text-custom-text-muted mb-xl max-w-2xl mx-auto">Romer turns scattered signals, approvals, and operating data into one calm dashboard for teams.</p>
+<div class="flex justify-center gap-md mb-24">
+<button class="bg-custom-btn-primary text-custom-btn-text px-lg py-md rounded font-body-lg">Get started</button>
+<button class="border border-custom-divider text-custom-btn-text px-lg py-md rounded font-body-lg hover:bg-custom-card-bg transition-colors">Book a demo</button>
+</div>
+</section>
+<!-- Hero Dashboard Mockup -->
+<div class="w-full bg-custom-card-bg rounded-xl border border-custom-divider overflow-hidden flex h-[700px] mb-32 inner-glow shadow-2xl relative">
+<!-- Sidebar -->
+<div class="w-64 bg-custom-sidebar border-r border-custom-divider-light p-md flex flex-col gap-sm">
+<div class="text-label-sm text-custom-text-muted uppercase tracking-widest mb-sm">Menu</div>
+<div class="flex items-center gap-sm px-sm py-xs bg-custom-divider rounded text-on-surface"><span class="material-symbols-outlined text-[18px]">grid_view</span>Overview</div>
+<div class="flex items-center gap-sm px-sm py-xs text-custom-text-muted hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">sensors</span>Signals</div>
+<div class="flex items-center gap-sm px-sm py-xs text-custom-text-muted hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">check_circle</span>Approvals</div>
+<div class="flex items-center gap-sm px-sm py-xs text-custom-text-muted hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">bar_chart</span>Metrics</div>
+<div class="flex items-center gap-sm px-sm py-xs text-custom-text-muted hover:text-on-surface"><span class="material-symbols-outlined text-[18px]">warning</span>Risks</div>
+</div>
+<!-- Center Area -->
+<div class="flex-1 p-lg flex flex-col gap-lg bg-[#0a0a0b] relative">
+<div class="grid grid-cols-3 gap-md">
+<div class="bg-custom-card-bg border border-custom-divider-light rounded p-md inner-glow">
+<div class="text-label-sm text-custom-text-muted mb-xs">Expected Net Recovery (ENRV)</div>
+<div class="font-h3 text-h3 text-on-surface">$2.1K</div>
+<div class="text-label-sm text-[#50d8e9] mt-xs">+12% vs last month</div>
+</div>
+<div class="bg-custom-card-bg border border-custom-divider-light rounded p-md inner-glow">
+<div class="text-label-sm text-custom-text-muted mb-xs">Degraded Cohorts</div>
+<div class="font-h3 text-h3 text-on-surface">14</div>
+<div class="text-label-sm text-[#ffb689] mt-xs">3 requiring attention</div>
+</div>
+<div class="bg-custom-card-bg border border-custom-divider-light rounded p-md inner-glow">
+<div class="text-label-sm text-custom-text-muted mb-xs">Risk Index</div>
+<div class="font-h3 text-h3 text-on-surface">Low</div>
+<div class="text-label-sm text-custom-text-muted mt-xs">All systems stable</div>
+</div>
+</div>
+<div class="flex-1 bg-custom-card-bg border border-custom-divider-light rounded p-md inner-glow flex flex-col">
+<div class="text-body-md font-bold text-on-surface border-b border-custom-divider-light pb-sm mb-md">Signal Flow</div>
+<div class="flex-1 rounded bg-[#070708] border border-custom-divider-light relative overflow-hidden">
+<!-- Abstract Chart Representation -->
+<div class="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-primary/10 to-transparent"></div>
+<svg class="absolute bottom-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0,80 Q25,50 50,70 T100,40 L100,100 L0,100 Z" fill="none" stroke="#5E6BFF" stroke-width="0.5"></path>
+<path d="M0,90 Q30,70 60,85 T100,60" fill="none" stroke="#50d8e9" stroke-dasharray="1 1" stroke-width="0.2"></path>
+</svg>
+</div>
+</div>
+</div>
+<!-- Right Panel -->
+<div class="w-80 bg-custom-panel border-l border-custom-divider-light p-md flex flex-col gap-md relative">
+<div class="text-body-md font-bold text-on-surface border-b border-custom-divider-light pb-sm flex justify-between items-center">
+                    Romer Intelligence
+                    <span class="w-2 h-2 rounded-full bg-[#50d8e9]"></span>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="text-label-sm text-custom-text-muted">Live Status</div>
+<div class="bg-custom-card-bg border border-custom-divider-light rounded p-sm flex items-start gap-sm">
+<span class="material-symbols-outlined text-[16px] text-primary mt-[2px]">info</span>
+<div>
+<div class="text-body-md text-on-surface">Data sync complete</div>
+<div class="text-label-sm text-custom-text-muted">Just now</div>
+</div>
+</div>
+</div>
+<!-- Floating Recommendation Card -->
+<div class="absolute bottom-lg left-lg right-lg glass-panel border border-custom-divider-light rounded-lg p-md shadow-lg z-10 inner-glow">
+<div class="flex items-center gap-sm mb-sm">
+<span class="material-symbols-outlined text-[16px] text-[#ffb689]">warning</span>
+<span class="text-label-sm font-bold text-on-surface">Blocking Approval</span>
+</div>
+<div class="text-body-md text-on-surface mb-sm">Q3 Budget reallocation requires sign-off.</div>
+<button class="w-full bg-custom-btn-primary text-custom-btn-text py-xs rounded text-label-sm">Review Now</button>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest full-width border-t border-outline-variant dark:border-outline-variant flat no shadows mt-32">
+<div class="grid grid-cols-2 md:grid-cols-6 gap-gutter px-margin-safe max-w-[1728px] mx-auto py-xl">
+<div class="col-span-2 md:col-span-2 flex flex-col justify-between">
+<div class="font-h4 text-h4 font-bold text-on-surface dark:text-on-surface mb-md">RecoverAI</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant dark:text-on-surface-variant">© 2024 Romer Business Operations. All rights reserved.</div>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="font-h4 text-h4 text-on-surface dark:text-on-surface mb-sm">Product</div>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary underline-offset-4 hover:underline transition-all" href="#">Overview</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary underline-offset-4 hover:underline transition-all" href="#">Features</a>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="font-h4 text-h4 text-on-surface dark:text-on-surface mb-sm">Platform</div>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary underline-offset-4 hover:underline transition-all" href="#">Integrations</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary underline-offset-4 hover:underline transition-all" href="#">Security</a>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="font-h4 text-h4 text-on-surface dark:text-on-surface mb-sm">Company</div>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary underline-offset-4 hover:underline transition-all" href="#">About</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary underline-offset-4 hover:underline transition-all" href="#">Careers</a>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="font-h4 text-h4 text-on-surface dark:text-on-surface mb-sm">Legal</div>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary underline-offset-4 hover:underline transition-all" href="#">Privacy</a>
+<a class="font-label-sm text-label-sm text-on-surface-variant dark:text-on-surface-variant hover:text-primary dark:hover:text-primary underline-offset-4 hover:underline transition-all" href="#">Terms</a>
+</div>
+</div>
+</footer>
+</main>
+</body></html>

@@ -1,0 +1,114 @@
+        <!-- VIEW 2: INCIDENT DETAIL (Causal Investigation Surface) -->
+        <section id="view-incidents" class="space-y-10 hidden max-w-5xl mx-auto">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b border-border-hairline">
+                <div class="space-y-1">
+                    <span class="text-[11px] font-mono uppercase tracking-widest text-text-muted">Causal Diagnosis &bull; Investigation</span>
+                    <h1 class="font-heading text-[38px] font-bold text-white tracking-tight leading-none">Why am I losing this money?</h1>
+                    <p class="text-text-muted text-[15px] max-w-2xl font-body mt-1">
+                        Deterministic root-cause synthesis slicing payment telemetry across dimension boundaries.
+                    </p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="navigate('decision')" class="px-5 py-2.5 bg-accent-indigo text-white font-heading font-bold text-[13px] rounded hover:bg-opacity-90 transition-all flex items-center gap-2 shadow-sm">
+                        Open Decision Room <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Causal Investigation Chain Banner -->
+            <div class="p-6 rounded-xl bg-surface-card border border-border-hairline inner-glow space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border-hairline pb-4">
+                    <div>
+                        <span class="text-[11px] font-mono uppercase text-text-subtle">Causal Root-Cause Chain</span>
+                        <h3 class="font-heading text-[20px] font-bold text-white mt-0.5">Isolated Upstream Authorization Failure</h3>
+                    </div>
+                    <span id="inc-confidence-badge" class="px-2.5 py-1 rounded bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20 text-[12px] font-mono font-bold">CONFIDENCE 100%</span>
+                </div>
+
+                <!-- Visual Step-by-Step Causal Chain -->
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 font-mono text-[13px]">
+                    <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-1 relative">
+                        <span class="text-[10px] text-text-subtle uppercase block font-mono">1. Bank &amp; Method</span>
+                        <span id="inc-bank-method" class="text-white font-bold text-[15px] block font-heading">HDFC · UPI</span>
+                        <span class="text-[11px] text-text-muted">Target cohort</span>
+                    </div>
+                    <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-1 relative">
+                        <span class="text-[10px] text-text-subtle uppercase block font-mono">2. Error Signature</span>
+                        <span id="inc-error-code" class="text-accent-coral font-mono font-bold text-[14px] block">GATEWAY_ERROR</span>
+                        <span class="text-[11px] text-text-muted">Upstream timeout</span>
+                    </div>
+                    <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-1 relative">
+                        <span class="text-[10px] text-text-subtle uppercase block font-mono">3. Pipeline Step</span>
+                        <span id="inc-error-step" class="text-white font-mono font-bold text-[13px] block">payment_authorization</span>
+                        <span class="text-[11px] text-text-muted">Handshake phase</span>
+                    </div>
+                    <div class="p-4 rounded-lg bg-surface-elevated border border-accent-coral/30 space-y-1 relative">
+                        <span class="text-[10px] text-accent-coral uppercase block font-mono">4. Failure Jump</span>
+                        <span id="inc-failure-jump" class="text-accent-coral font-mono font-bold text-[15px] block">28.6% vs 3.3%</span>
+                        <span class="text-[11px] text-text-muted">+25.2% pts delta</span>
+                    </div>
+                </div>
+
+                <!-- Explanation Summary -->
+                <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-1.5">
+                    <div class="flex items-center gap-2 text-[12px] font-mono text-accent-cyan uppercase font-bold">
+                        <span class="material-symbols-outlined text-[16px]">psychology</span>
+                        Diagnosis Synthesis &bull; Authorization-Step Degradation
+                    </div>
+                    <p id="inc-diag-explanation" class="text-[14px] text-text-main leading-relaxed font-body">
+                        Degradation is strictly localized to bank <span class="font-mono font-bold text-white">HDFC</span> for payment method <span class="font-mono font-bold text-white">UPI</span> during the authorization handshake. Other banks maintain nominal failure rates (&lt;3.5%). The error pattern indicates an acquirer-side temporary gateway timeout rather than consumer balance exhaustion.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Telemetry Evidence Breakdown Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Baseline vs Active Window Comparison -->
+                <div class="bg-surface-card border border-border-hairline rounded-xl p-6 inner-glow space-y-4">
+                    <h3 class="font-heading text-[17px] font-bold text-white">Window Comparison Metrics</h3>
+                    
+                    <div class="overflow-x-auto border border-border-hairline rounded-lg font-mono text-[12px]">
+                        <table class="w-full text-left">
+                            <thead class="bg-surface-sidebar text-text-muted text-[11px] uppercase border-b border-border-hairline">
+                                <tr>
+                                    <th class="py-2.5 px-4">Period</th>
+                                    <th class="py-2.5 px-4">Total</th>
+                                    <th class="py-2.5 px-4">Failed</th>
+                                    <th class="py-2.5 px-4">Rate</th>
+                                    <th class="py-2.5 px-4 text-right">Volume</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-hairline">
+                                <tr>
+                                    <td class="py-3 px-4 text-text-muted">Baseline (2h)</td>
+                                    <td id="inc-base-total" class="py-3 px-4 text-white">30</td>
+                                    <td id="inc-base-failed" class="py-3 px-4 text-white">1</td>
+                                    <td id="inc-base-rate" class="py-3 px-4 text-text-muted">3.3%</td>
+                                    <td id="inc-base-vol" class="py-3 px-4 text-right text-text-muted">₹10,000</td>
+                                </tr>
+                                <tr class="bg-accent-coral/5 font-bold">
+                                    <td class="py-3 px-4 text-accent-coral">Incident (30m)</td>
+                                    <td id="inc-curr-total" class="py-3 px-4 text-white">28</td>
+                                    <td id="inc-curr-failed" class="py-3 px-4 text-accent-coral">8</td>
+                                    <td id="inc-curr-rate" class="py-3 px-4 text-accent-coral">28.6%</td>
+                                    <td id="inc-curr-vol" class="py-3 px-4 text-right text-accent-coral">₹14,000</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Associated Target Cohort Transactions -->
+                <div class="bg-surface-card border border-border-hairline rounded-xl p-6 inner-glow space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-heading text-[17px] font-bold text-white">Associated Recovery Records</h3>
+                        <span id="inc-attempts-count" class="text-[11px] font-mono text-text-muted">Records: 0</span>
+                    </div>
+
+                    <div id="inc-attempts-list" class="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 font-mono text-[12px]">
+                        <div class="text-text-muted text-center py-4 font-body">Loading recovery records...</div>
+                    </div>
+                </div>
+            </div>
+        </section>

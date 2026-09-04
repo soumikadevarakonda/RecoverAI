@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Manrope:wght@520&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#bec2ff",
+                        "on-secondary-fixed": "#001f23",
+                        "on-tertiary-fixed-variant": "#743500",
+                        "surface": "#131314",
+                        "secondary-container": "#00b1c2",
+                        "tertiary-fixed": "#ffdbc8",
+                        "on-background": "#e5e2e3",
+                        "tertiary-fixed-dim": "#ffb689",
+                        "on-error": "#690005",
+                        "surface-dim": "#131314",
+                        "on-error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#311300",
+                        "on-secondary-container": "#003e44",
+                        "error-container": "#93000a",
+                        "secondary": "#50d8e9",
+                        "inverse-surface": "#e5e2e3",
+                        "primary-fixed-dim": "#bec2ff",
+                        "surface-bright": "#3a393a",
+                        "outline": "#8f8fa1",
+                        "on-primary-fixed": "#000469",
+                        "secondary-fixed-dim": "#50d8e9",
+                        "background": "#131314",
+                        "on-tertiary": "#512300",
+                        "tertiary-container": "#e0731d",
+                        "secondary-fixed": "#92f1ff",
+                        "on-primary-fixed-variant": "#1f2bc8",
+                        "error": "#ffb4ab",
+                        "surface-container-lowest": "#0e0e0f",
+                        "outline-variant": "#454655",
+                        "primary-container": "#7a85ff",
+                        "surface-container-highest": "#353436",
+                        "on-tertiary-container": "#471e00",
+                        "surface-container-high": "#2a2a2b",
+                        "on-secondary": "#00363c",
+                        "on-surface-variant": "#c6c5d8",
+                        "on-primary-container": "#000992",
+                        "surface-tint": "#bec2ff",
+                        "on-surface": "#e5e2e3",
+                        "inverse-primary": "#3d4ae0",
+                        "surface-container-low": "#1c1b1d",
+                        "inverse-on-surface": "#313031",
+                        "tertiary": "#ffb689",
+                        "on-primary": "#000ba6",
+                        "surface-variant": "#353436",
+                        "on-secondary-fixed-variant": "#004f57",
+                        "primary-fixed": "#e0e0ff",
+                        "surface-container": "#201f21"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xs": "4px",
+                        "md": "16px",
+                        "margin-safe": "32px",
+                        "gutter": "20px",
+                        "xl": "40px",
+                        "lg": "24px",
+                        "sm": "8px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "h4": ["Manrope"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "mono-data": ["Inter"],
+                        "h3": ["Manrope"],
+                        "h2": ["Manrope"],
+                        "h1": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "h4": ["18px", { "lineHeight": "1.4", "letterSpacing": "-0.02em", "fontWeight": "520" }],
+                        "body-md": ["14px", { "lineHeight": "1.5", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "mono-data": ["13px", { "lineHeight": "1", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+                        "h3": ["24px", { "lineHeight": "1.2", "letterSpacing": "-0.04em", "fontWeight": "520" }],
+                        "h2": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.05em", "fontWeight": "520" }],
+                        "h1": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.05em", "fontWeight": "520" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #080809; /* Deep dark background */
+        }
+        .btn-primary {
+            background-color: #5E6BFF;
+            color: #F0F1F2;
+            border-radius: 4px;
+        }
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid #232426;
+            color: #F0F1F2;
+            border-radius: 4px;
+        }
+        .input-field {
+            background-color: #101112;
+            border: 1px solid #1B1C1E;
+            border-radius: 4px;
+            color: #e5e2e3;
+        }
+        .input-field:focus {
+            border-color: #5E6BFF;
+            box-shadow: 0 0 0 2px rgba(94, 107, 255, 0.2);
+            outline: none;
+        }
+        .card-panel {
+            background-color: #101112;
+            border: 1px solid #1B1C1E;
+            border-radius: 4px;
+        }
+        .card-header-divider {
+            border-bottom: 1px solid #1B1C1E;
+        }
+    </style>
+</head>
+<body class="text-on-surface antialiased min-h-screen flex flex-col font-body-md">
+<!-- TopNavBar (Suppressed due to Task-Focused intent, but keeping semantic wrapper for layout) -->
+<header class="h-12 w-full flex justify-between items-center px-md border-b border-outline-variant bg-surface shrink-0 hidden md:flex">
+<div class="flex items-center gap-md">
+<span class="font-h4 text-h4 font-bold tracking-tighter text-on-surface">ROMER</span>
+</div>
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-on-surface transition-colors" data-icon="close">close</span>
+</div>
+</header>
+<main class="flex-1 flex w-full max-w-7xl mx-auto overflow-hidden">
+<!-- Settings SideNav (Custom for Settings Context) -->
+<nav class="w-64 h-full border-r border-outline-variant bg-surface-container-low flex-col py-xl px-md hidden md:flex shrink-0">
+<div class="mb-xl px-sm">
+<h1 class="font-h2 text-h2 text-on-surface">Settings</h1>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="px-sm py-sm rounded-lg cursor-pointer hover:bg-surface-container transition-all duration-150 text-on-surface-variant font-label-sm text-label-sm flex items-center gap-sm">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+                    Workspace
+                </div>
+<div class="px-sm py-sm rounded-lg cursor-pointer hover:bg-surface-container transition-all duration-150 text-on-surface-variant font-label-sm text-label-sm flex items-center gap-sm">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+                    Team
+                </div>
+<div class="px-sm py-sm rounded-lg bg-surface-container-high text-secondary border-l-2 border-secondary font-label-sm text-label-sm flex items-center gap-sm cursor-pointer">
+<span class="material-symbols-outlined" data-icon="integration_instructions">integration_instructions</span>
+                    Integrations
+                </div>
+<div class="px-sm py-sm rounded-lg cursor-pointer hover:bg-surface-container transition-all duration-150 text-on-surface-variant font-label-sm text-label-sm flex items-center gap-sm mt-xl">
+<span class="material-symbols-outlined" data-icon="credit_card">credit_card</span>
+                    Billing
+                </div>
+<div class="px-sm py-sm rounded-lg cursor-pointer hover:bg-surface-container transition-all duration-150 text-on-surface-variant font-label-sm text-label-sm flex items-center gap-sm">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+                    Security
+                </div>
+</div>
+</nav>
+<!-- Right Detail Panel (Integrations) -->
+<section class="flex-1 overflow-y-auto p-gutter md:p-xl bg-background flex flex-col gap-xl">
+<div class="max-w-4xl w-full mx-auto flex flex-col gap-xl">
+<header class="flex justify-between items-end border-b border-[#1B1C1E] pb-md">
+<div>
+<h2 class="font-h3 text-h3 text-on-surface mb-base">Integrations</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Configure payment gateways, telemetry webhooks, and recovery policy guardrails.</p>
+</div>
+</header>
+<!-- Integration Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<!-- Razorpay Webhook & Payment Events Integration -->
+<div class="card-panel p-lg flex flex-col gap-md">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-md">
+<img alt="Razorpay Webhook & Payment Events Logo" class="w-12 h-12 rounded bg-surface-variant object-cover" src="https://lh3.googleusercontent.com/aida/ADBb0ujeDmVl0s-r-yH8ZVLWpJBzF3zYskAa1KJsN6HJWYEw-hxQRFqsJJgOTTvcAtFIERaxqhpKoUB7kXUV36wBnuUpRJgvrw1USrfY-R3FRB7CUyXgYP4trpU3KNXuenudL9_wKrE1NB5Ae9HCJvvRcRexcBsfmvpIEbDeNjaKE2ysWRSMohgyEXtEEnFPWwx7VKe3Hr0eO_kw7oDpF6ZsFfSecvUPnmtbqHqxouvfGsBStLdmMgR8n3gq1w"/>
+<div>
+<h3 class="font-h4 text-h4 text-on-surface">Razorpay Webhook & Payment Events</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-base">Communication</p>
+</div>
+</div>
+<div class="w-2 h-2 rounded-full bg-[#10B981]"></div> <!-- Active Status Accent -->
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Send automated alerts and daily digests directly to your designated Razorpay Webhook & Payment Events channels.</p>
+<div class="mt-auto pt-md card-header-divider flex justify-between items-center">
+<span class="font-mono-data text-mono-data text-on-surface-variant">Connected</span>
+<button class="btn-secondary px-md py-sm font-label-sm text-label-sm transition-colors hover:bg-surface-variant">Configure</button>
+</div>
+</div>
+<!-- HDFC UPI & Netbanking Gateway Integration -->
+<div class="card-panel p-lg flex flex-col gap-md">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded bg-[#00A1E0] flex items-center justify-center text-[#FFFFFF]">
+<span class="material-symbols-outlined" data-icon="cloud">cloud</span>
+</div>
+<div>
+<h3 class="font-h4 text-h4 text-on-surface">HDFC UPI & Netbanking Gateway</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-base">CRM</p>
+</div>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Sync customer telemetry data with HDFC UPI & Netbanking Gateway accounts and contacts automatically.</p>
+<div class="mt-auto pt-md card-header-divider flex justify-between items-center">
+<span class="font-mono-data text-mono-data text-on-surface-variant">Not connected</span>
+<button class="btn-primary px-md py-sm font-label-sm text-label-sm transition-opacity hover:opacity-90">Connect</button>
+</div>
+</div>
+<!-- SBI & ICICI Gateway Routes Integration -->
+<div class="card-panel p-lg flex flex-col gap-md">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded bg-[#5E6AD2] flex items-center justify-center text-[#FFFFFF]">
+<span class="material-symbols-outlined" data-icon="timeline">timeline</span>
+</div>
+<div>
+<h3 class="font-h4 text-h4 text-on-surface">SBI & ICICI Gateway Routes</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-base">Issue Tracking</p>
+</div>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Create and link SBI & ICICI Gateway Routes issues directly from anomaly alerts.</p>
+<div class="mt-auto pt-md card-header-divider flex justify-between items-center">
+<span class="font-mono-data text-mono-data text-on-surface-variant">Not connected</span>
+<button class="btn-primary px-md py-sm font-label-sm text-label-sm transition-opacity hover:opacity-90">Connect</button>
+</div>
+</div>
+<!-- Webhook Integration -->
+<div class="card-panel p-lg flex flex-col gap-md border border-dashed border-outline-variant bg-transparent">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded border border-outline-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="webhook">webhook</span>
+</div>
+<div>
+<h3 class="font-h4 text-h4 text-on-surface">Recovery Policy Guardrails</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-base">Developer Tools</p>
+</div>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Approval threshold: ₹5,000. Max incentive: ₹1,000. Max exposure: ₹20,000.</p>
+<div class="mt-auto pt-md card-header-divider flex justify-between items-center border-none">
+<button class="text-secondary font-label-sm text-label-sm flex items-center gap-xs hover:underline">
+<span class="material-symbols-outlined text-[16px]" data-icon="add">add</span>
+                                 Add Webhook
+                             </button>
+</div>
+</div>
+</div>
+<!-- API Settings Block -->
+<div class="card-panel flex flex-col">
+<div class="p-lg card-header-divider">
+<h3 class="font-h4 text-h4 text-on-surface">API Credentials</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">Manage your secret keys for custom integrations.</p>
+</div>
+<div class="p-lg flex flex-col gap-md">
+<div class="flex flex-col gap-xs">
+<label class="font-label-sm text-label-sm text-on-surface">Production API Key</label>
+<div class="flex gap-sm">
+<input class="input-field flex-1 px-md py-sm font-mono-data text-mono-data" readonly="" type="password" value="sk_live_1234567890abcdefghijklmnopqrstuvwxyz"/>
+<button class="btn-secondary px-md py-sm flex items-center justify-center hover:bg-surface-variant transition-colors" title="Copy to clipboard">
+<span class="material-symbols-outlined text-[18px]" data-icon="content_copy">content_copy</span>
+</button>
+<button class="btn-secondary px-md py-sm flex items-center justify-center text-error border-error-container hover:bg-error-container/20 transition-colors" title="Revoke Key">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+</div>
+<div class="mt-md">
+<button class="btn-secondary px-md py-sm font-label-sm text-label-sm transition-colors hover:bg-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]" data-icon="add_key">key</span>
+                                 Generate New Key
+                             </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</body></html>
