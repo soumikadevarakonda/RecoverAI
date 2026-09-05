@@ -284,8 +284,18 @@
         }
 
         function renderDecisionRoom() {
-            const rec = AppState.activeRecovery;
+            let rec = AppState.activeRecovery;
             const inc = AppState.activeIncident;
+            const allRecoveries = AppState.recoveries || [];
+
+            if (!rec && allRecoveries.length > 0) {
+                rec = (inc ? allRecoveries.find(r => r.incident_id === inc.id && (r.status === 'pending' || r.status === 'approved')) : null)
+                    || allRecoveries.find(r => r.status === 'pending' || r.status === 'approved')
+                    || (inc ? allRecoveries.find(r => r.incident_id === inc.id) : null)
+                    || allRecoveries[0];
+                AppState.activeRecovery = rec;
+            }
+
             const sim = getSimulatedState();
 
             const baseRisk = (inc && inc.revenue_at_risk) ? inc.revenue_at_risk : 14000;
@@ -565,7 +575,23 @@
         // --- Controller Actions ---
 
         async function handleDecisionPrimaryAction() {
-            const rec = AppState.activeRecovery;
+            let rec = AppState.activeRecovery;
+            const allRecoveries = AppState.recoveries || [];
+            const inc = AppState.activeIncident;
+
+            if (!rec && allRecoveries.length > 0) {
+                rec = (inc ? allRecoveries.find(r => r.incident_id === inc.id && (r.status === 'pending' || r.status === 'approved')) : null)
+                    || allRecoveries.find(r => r.status === 'pending' || r.status === 'approved')
+                    || (inc ? allRecoveries.find(r => r.incident_id === inc.id) : null)
+                    || allRecoveries[0];
+                AppState.activeRecovery = rec;
+            }
+
+            if (!rec) {
+                await refreshRecoveries();
+                rec = AppState.activeRecovery;
+            }
+
             if (!rec) {
                 alert('No active recovery plan selected.');
                 return;
@@ -589,6 +615,8 @@
                     const updated = await RecoverAPI.executeRecovery(rec.recovery_id);
                     AppState.activeRecovery = updated;
                     await refreshRecoveries();
+                } else {
+                    await refreshRecoveries();
                 }
             } catch (err) {
                 alert(`Operation failed: ${err.message}`);
@@ -599,10 +627,32 @@
         async function executeActiveRecovery() {
             const inc = AppState.activeIncident;
             const activeIncidentId = inc ? inc.id : null;
-            const allRecoveries = AppState.recoveries || [];
-            const targetAttempts = activeIncidentId
-                ? allRecoveries.filter(r => r.incident_id === activeIncidentId)
-                : allRecoveries;
+            let allRecoveries = AppState.recoveries || [];
+
+            if (allRecoveries.length === 0) {
+                await refreshRecoveries();
+                allRecoveries = AppState.recoveries || [];
+            }
+
+            // 1. Pending or approved for current active incident
+            let targetAttempts = activeIncidentId
+                ? allRecoveries.filter(r => r.incident_id === activeIncidentId && (r.status === 'pending' || r.status === 'approved'))
+                : [];
+
+            // 2. Any pending or approved attempts in system
+            if (targetAttempts.length === 0) {
+                targetAttempts = allRecoveries.filter(r => r.status === 'pending' || r.status === 'approved');
+            }
+
+            // 3. Any attempts for current active incident
+            if (targetAttempts.length === 0 && activeIncidentId) {
+                targetAttempts = allRecoveries.filter(r => r.incident_id === activeIncidentId);
+            }
+
+            // 4. All recoveries fallback
+            if (targetAttempts.length === 0) {
+                targetAttempts = allRecoveries;
+            }
 
             if (targetAttempts.length === 0) {
                 alert('No recovery record available to execute.');
@@ -647,8 +697,9 @@
                     const matched = inc 
                         ? (recoveries.find(r => r.incident_id === inc.id && (r.status === 'pending' || r.status === 'approved')) ||
                            recoveries.find(r => r.incident_id === inc.id) ||
+                           recoveries.find(r => r.status === 'pending' || r.status === 'approved') ||
                            recoveries[0])
-                        : recoveries[0];
+                        : (recoveries.find(r => r.status === 'pending' || r.status === 'approved') || recoveries[0]);
                     AppState.activeRecovery = matched;
                 }
                 renderCampaign();
@@ -703,8 +754,9 @@
                     const matched = inc 
                         ? (recoveries.find(r => r.incident_id === inc.id && (r.status === 'pending' || r.status === 'approved')) ||
                            recoveries.find(r => r.incident_id === inc.id) ||
+                           recoveries.find(r => r.status === 'pending' || r.status === 'approved') ||
                            recoveries[0])
-                        : recoveries[0];
+                        : (recoveries.find(r => r.status === 'pending' || r.status === 'approved') || recoveries[0]);
                     AppState.activeRecovery = matched;
                 }
 

@@ -2,6 +2,7 @@ from typing import List
 from uuid import UUID
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.db.dependencies import get_db
 from app.domains.recovery.service import execute_recovery_attempt
@@ -31,6 +32,25 @@ router = APIRouter(
     prefix="/merchant",
     tags=["Merchant APIs"],
 )
+
+
+DEFAULT_TRIAL_MERCHANT_ID = UUID("b614b90f-49fd-4d6a-8689-52d4d2878b03")
+
+
+def _ensure_trial_data(db: Session, merchant_id: UUID) -> None:
+    """
+    Ensures trial scenario data exists for the default trial merchant in development mode.
+    """
+    if settings.environment != "production" and merchant_id == DEFAULT_TRIAL_MERCHANT_ID:
+        inc_count = db.scalar(select(func.count(Incident.id)).where(Incident.merchant_id == merchant_id))
+        if not inc_count:
+            try:
+                from scripts.seed_trial_data import seed_trial_scenario
+                from app.domains.recovery.trial_evaluation import evaluate_trial_scenario
+                seed_trial_scenario(db, merchant_id=merchant_id)
+                evaluate_trial_scenario(db, merchant_id=merchant_id)
+            except Exception:
+                pass
 
 
 def get_merchant_id(
@@ -76,6 +96,7 @@ def get_dashboard_summary(
     merchant_id: UUID = Depends(get_merchant_id),
     db: Session = Depends(get_db),
 ):
+    _ensure_trial_data(db, merchant_id)
     active_incidents = db.scalar(
         select(func.count(Incident.id)).where(
             Incident.merchant_id == merchant_id,
@@ -133,6 +154,7 @@ def list_incidents(
     merchant_id: UUID = Depends(get_merchant_id),
     db: Session = Depends(get_db),
 ):
+    _ensure_trial_data(db, merchant_id)
     incidents = db.scalars(
         select(Incident).where(Incident.merchant_id == merchant_id)
     ).all()
@@ -265,6 +287,7 @@ def list_recoveries(
     merchant_id: UUID = Depends(get_merchant_id),
     db: Session = Depends(get_db),
 ):
+    _ensure_trial_data(db, merchant_id)
     attempts = db.scalars(
         select(RecoveryAttempt).where(RecoveryAttempt.merchant_id == merchant_id)
     ).all()
