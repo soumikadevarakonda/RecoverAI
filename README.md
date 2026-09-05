@@ -326,7 +326,8 @@ The repository includes a deterministic trial scenario configured via `backend/s
 - **Diagnosis**: Deterministic payment authorization degradation due to upstream gateway timeouts.
 - **Historical Evidence**: 5 prior comparable retry attempts with a 100% observed recovery rate.
 - **Expected Net Recovery**: **₹14,000** (100% yield, ₹0 discount cost).
-- **Verified Recovered**: **₹0** initially $ightarrow$ Increases dynamically as real/simulated Razorpay payment links settle.
+- **Verified Recovered**: **₹0** initially $
+ightarrow$ Increases dynamically as real/simulated Razorpay payment links settle.
 
 ---
 

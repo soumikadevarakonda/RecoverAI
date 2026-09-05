@@ -26,7 +26,7 @@ class RazorpayClient:
             clean_ref = reference_id.replace("rec_", "")
             return {
                 "id": f"plink_{clean_ref}",
-                "short_url": f"https://rzp.io/i/{clean_ref}",
+                "short_url": f"/pay.html?id=plink_{clean_ref}&ref={reference_id}&amount={amount}",
                 "status": "created",
                 "amount": amount,
                 "currency": "INR",
@@ -61,7 +61,7 @@ class RazorpayClient:
                 clean_ref = reference_id.replace("rec_", "")
                 return {
                     "id": f"plink_{clean_ref}",
-                    "short_url": f"https://rzp.io/i/{clean_ref}",
+                    "short_url": f"/pay.html?id=plink_{clean_ref}&ref={reference_id}&amount={amount}",
                     "status": "created",
                     "amount": amount,
                     "currency": "INR",

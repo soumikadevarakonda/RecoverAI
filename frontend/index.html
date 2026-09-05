@@ -955,6 +955,15 @@
             }
         }
 
+        function resolvePaymentUrl(shortUrl, recoveryId, linkId, amount = 1250) {
+            if (!shortUrl) return '#';
+            if (shortUrl.startsWith('/pay.html') || shortUrl.startsWith('pay.html') || shortUrl.includes('127.0.0.1:5173') || shortUrl.includes('localhost:5173')) {
+                return shortUrl;
+            }
+            // For test simulation, open local interactive checkout simulator
+            return `/pay.html?id=${encodeURIComponent(linkId || 'plink_live')}&ref=${encodeURIComponent(recoveryId || 'rec_plan_01')}&amount=${encodeURIComponent(amount)}`;
+        }
+
         function renderDecisionRoom() {
             const rec = AppState.activeRecovery;
             const inc = AppState.activeIncident;
@@ -1031,14 +1040,15 @@
                 const payNowBtn = document.getElementById('dec-pay-now-btn');
                 if (calloutEl) {
                     if (rec.short_url) {
+                        const targetUrl = resolvePaymentUrl(rec.short_url, rec.recovery_id, rec.payment_link_id, 1250);
                         calloutEl.classList.remove('hidden');
                         if (shortUrlLink) {
                             shortUrlLink.innerText = rec.short_url;
-                            shortUrlLink.href = rec.short_url;
+                            shortUrlLink.href = targetUrl;
                             shortUrlLink.onclick = () => recordSimulatedPayment(rec.recovery_id, 1250);
                         }
                         if (payNowBtn) {
-                            payNowBtn.href = rec.short_url;
+                            payNowBtn.href = targetUrl;
                             payNowBtn.onclick = () => recordSimulatedPayment(rec.recovery_id, 1250);
                         }
                     } else {
@@ -1130,15 +1140,16 @@
 
             if (bannerEl) {
                 if (executedAttempt && executedAttempt.short_url) {
+                    const targetUrl = resolvePaymentUrl(executedAttempt.short_url, executedAttempt.recovery_id, executedAttempt.payment_link_id, 1250);
                     bannerEl.classList.remove('hidden');
                     if (linkBtn) {
-                        linkBtn.href = executedAttempt.short_url;
+                        linkBtn.href = targetUrl;
                         linkBtn.onclick = () => recordSimulatedPayment(executedAttempt.recovery_id, 1250);
                     }
                     if (linkIdEl) linkIdEl.innerText = executedAttempt.payment_link_id || '—';
                     if (shortUrlEl) {
                         shortUrlEl.innerText = executedAttempt.short_url;
-                        shortUrlEl.href = executedAttempt.short_url;
+                        shortUrlEl.href = targetUrl;
                         shortUrlEl.onclick = () => recordSimulatedPayment(executedAttempt.recovery_id, 1250);
                     }
                 } else {
@@ -1163,6 +1174,7 @@
                         else if (currentStatus === 'pending') statusColor = 'bg-accent-amber/10 text-accent-amber border-accent-amber/30';
 
                         const displayRecovered = isSimRecovered ? formatINR(1250) : formatINR(r.recovered_amount);
+                        const targetUrl = resolvePaymentUrl(r.short_url, r.recovery_id, r.payment_link_id, 1250);
 
                         return `
                             <tr class="hover:bg-surface-card transition-colors ${isLiveTarget ? 'bg-accent-indigo/5' : ''}">
@@ -1178,7 +1190,7 @@
                                 <td class="py-3.5 px-4 text-white font-bold">${displayRecovered}</td>
                                 <td class="py-3.5 px-4 text-accent-cyan font-mono">${r.payment_link_id || '—'}</td>
                                 <td class="py-3.5 px-4 text-right font-mono">
-                                    ${r.short_url ? `<a href="${r.short_url}" target="_blank" onclick="recordSimulatedPayment('${r.recovery_id}', 1250)" class="px-2.5 py-1 rounded bg-accent-cyan text-black hover:bg-opacity-90 font-bold text-[11px] inline-flex items-center gap-1">Pay Test Mode &rarr;</a>` : '—'}
+                                    ${r.short_url ? `<a href="${targetUrl}" target="_blank" onclick="recordSimulatedPayment('${r.recovery_id}', 1250)" class="px-2.5 py-1 rounded bg-accent-cyan text-black hover:bg-opacity-90 font-bold text-[11px] inline-flex items-center gap-1">Pay Test Mode &rarr;</a>` : '—'}
                                 </td>
                             </tr>
                         `;
@@ -1398,4 +1410,3 @@
     </script>
 </body>
 </html>
-

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Razorpay Test Mode Checkout — RecoverAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #0c1527; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 text-slate-100">
+
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+        <!-- Razorpay Header -->
+        <div class="bg-[#0c2340] border-b border-blue-900/40 p-6 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center font-bold text-blue-400">
+                    ₹
+                </div>
+                <div>
+                    <h2 class="font-bold text-white text-base leading-tight">Trial Merchant</h2>
+                    <span class="text-[11px] text-blue-300 font-mono tracking-wide uppercase">Razorpay Test Mode Gateway</span>
+                </div>
+            </div>
+            <div class="px-2.5 py-1 rounded bg-amber-500/10 border border-amber-500/30 text-amber-400 font-mono text-[10px] font-bold tracking-wider uppercase">
+                TEST MODE
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="p-6 border-b border-slate-800/80 bg-slate-900/50 space-y-3">
+            <div class="flex justify-between items-baseline">
+                <span class="text-xs text-slate-400 font-mono uppercase tracking-wider">Amount Payable</span>
+                <span id="display-amount" class="text-3xl font-extrabold text-white tracking-tight font-mono">₹1,250</span>
+            </div>
+            <div class="flex justify-between text-xs text-slate-400 pt-1 font-mono">
+                <span>Reference: <span id="display-ref" class="text-slate-200 font-bold">rec_plan_01</span></span>
+                <span id="display-link-id" class="text-blue-400">plink_live</span>
+            </div>
+            <p class="text-xs text-slate-400 font-normal leading-relaxed pt-1">
+                Smart Recovery Link dispatched by <strong class="text-slate-200">RecoverAI Control Plane</strong> to resolve transient gateway authorization degradation.
+            </p>
+        </div>
+
+        <!-- Payment Form -->
+        <div id="payment-form" class="p-6 space-y-5">
+            <div class="space-y-2">
+                <label class="block text-xs font-mono uppercase text-slate-400 tracking-wider">Select Test Payment Method</label>
+                
+                <div class="grid grid-cols-1 gap-2.5 text-xs font-medium">
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-blue-500/40 bg-blue-500/10 cursor-pointer transition-all">
+                        <input type="radio" name="pay_method" value="upi" checked class="text-blue-600 focus:ring-0" />
+                        <span class="text-white font-semibold flex-1">UPI / Instant Pay</span>
+                        <span class="font-mono text-[11px] text-blue-300">HDFC Gateway Test</span>
+                    </label>
+
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-800 bg-slate-800/40 hover:bg-slate-800/70 cursor-pointer transition-all">
+                        <input type="radio" name="pay_method" value="card" class="text-blue-600 focus:ring-0" />
+                        <span class="text-slate-200 font-semibold flex-1">Credit / Debit Card</span>
+                        <span class="font-mono text-[11px] text-slate-400">•••• 4242</span>
+                    </label>
+
+                    <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-800 bg-slate-800/40 hover:bg-slate-800/70 cursor-pointer transition-all">
+                        <input type="radio" name="pay_method" value="netbanking" class="text-blue-600 focus:ring-0" />
+                        <span class="text-slate-200 font-semibold flex-1">Netbanking</span>
+                        <span class="font-mono text-[11px] text-slate-400">Direct Auth</span>
+                    </label>
+                </div>
+            </div>
+
+            <button id="btn-pay" onclick="handlePay()" class="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 font-mono">
+                <span>Simulate Successful Payment &rarr;</span>
+            </button>
+            <p class="text-center text-[11px] text-slate-500 font-mono">
+                Safe sandbox simulation • No real money is charged
+            </p>
+        </div>
+
+        <!-- Success State (Hidden initially) -->
+        <div id="success-state" class="hidden p-8 text-center space-y-4">
+            <div class="w-16 h-16 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+                ✓
+            </div>
+            <div class="space-y-1">
+                <h3 class="text-xl font-bold text-white">Payment Verified</h3>
+                <p class="text-sm text-slate-400">Razorpay webhook confirmed. RecoverAI has verified settlement.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700/50 text-xs font-mono space-y-1.5 text-left text-slate-300">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Payment ID:</span>
+                    <span id="success-pay-id" class="text-emerald-400 font-bold">pay_sim_success</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Amount Settled:</span>
+                    <span id="success-amount" class="text-white font-bold">₹1,250</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Status:</span>
+                    <span class="text-emerald-400 font-bold uppercase">Captured / Recovered</span>
+                </div>
+            </div>
+            <button onclick="window.close(); if(!window.closed) window.location.href='/';" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold text-sm rounded-xl transition-all font-mono">
+                Return to RecoverAI Control Plane
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const refId = urlParams.get('ref') || urlParams.get('reference_id') || 'rec_plan_01';
+        const linkId = urlParams.get('id') || 'plink_live';
+        const rawAmount = parseInt(urlParams.get('amount')) || 1250;
+        const displayAmountVal = (rawAmount > 100 && rawAmount % 100 === 0 && rawAmount > 5000) ? (rawAmount / 100) : rawAmount;
+        const amountFormatted = '₹' + displayAmountVal.toLocaleString('en-IN');
+
+        document.getElementById('display-ref').innerText = refId;
+        document.getElementById('display-link-id').innerText = linkId;
+        document.getElementById('display-amount').innerText = amountFormatted;
+
+        function handlePay() {
+            const btn = document.getElementById('btn-pay');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Processing Payment...';
+
+            setTimeout(() => {
+                // Record in localStorage
+                try {
+                    const SIM_KEY = 'recoverai_demo_simulated_recovered';
+                    let state = { count: 0, amount: 0, recoveredIds: [] };
+                    const stored = localStorage.getItem(SIM_KEY);
+                    if (stored) state = JSON.parse(stored);
+                    if (!state.recoveredIds.includes(refId)) {
+                        state.recoveredIds.push(refId);
+                        state.count = state.recoveredIds.length;
+                        state.amount += displayAmountVal;
+                        localStorage.setItem(SIM_KEY, JSON.stringify(state));
+                    }
+                } catch(e) {}
+
+                document.getElementById('payment-form').classList.add('hidden');
+                document.getElementById('success-state').classList.remove('hidden');
+                document.getElementById('success-pay-id').innerText = 'pay_sim_' + Math.random().toString(36).substring(2, 10);
+                document.getElementById('success-amount').innerText = amountFormatted;
+            }, 600);
+        }
+    </script>
+</body>
+</html>
