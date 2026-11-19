@@ -415,7 +415,7 @@ Open your browser at **`http://127.0.0.1:5173`**.
 The demo deployment uses Vercel for the static frontend, Render for FastAPI, and a separate Neon Postgres database. Do not connect the demo to a local or production database.
 
 - Deploy the Render Blueprint from `render.yaml` on the `deploy/recoverai-demo` branch and provide `DATABASE_URL` from the demo Neon project. The start command applies migrations; the first dashboard request seeds synthetic trial data.
-- Deploy `frontend/` as a Vercel project from the same branch. `frontend/vercel.json` proxies `/api/*` to the Render service.
+- Deploy `frontend/` as a Vercel project. Because Vercel's import flow does not handle slash-containing branch names reliably, the `recoverai-demo` branch is an import-only mirror; set the Vercel Production environment's branch tracking to `deploy/recoverai-demo`. `frontend/vercel.json` proxies `/api/*` to the Render service.
 - Leave Razorpay credentials unset, or use test-mode credentials only. Never use live merchant data or live payment credentials with this public demo.
 - Free hosting can sleep or pause; this setup is for demos and testing, not production payment processing.
 
