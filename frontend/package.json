@@ -1,0 +1,13 @@
+{
+  "name": "recoverai-frontend",
+  "private": true,
+  "description": "RecoverAI control plane UI (static). Only the CSS build needs Node.",
+  "scripts": {
+    "build:css": "tailwindcss -c tailwind.config.js -i src/input.css -o css/tailwind.css --minify",
+    "build": "npm run build:css && python gen_spa.py"
+  },
+  "devDependencies": {
+    "@tailwindcss/forms": "^0.5.10",
+    "tailwindcss": "^3.4.17"
+  }
+}

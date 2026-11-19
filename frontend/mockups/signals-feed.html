@@ -3,7 +3,7 @@
 <html class="dark" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Signals - ROMER Operations</title>
+<title>RecoverAI - Degradation Signals & Diagnosis Operations</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=Manrope:wght@520&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -189,10 +189,10 @@
 <!-- TopNavBar -->
 <header class="flex justify-between items-center h-12 px-md w-full sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-outline-variant dark:border-outline-variant text-primary dark:text-primary">
 <div class="flex items-center gap-md">
-<div class="font-h3 text-h3 font-bold tracking-tighter text-on-background dark:text-on-background">ROMER</div>
+<div class="font-h3 text-h3 font-bold tracking-tighter text-on-background dark:text-on-background">RecoverAI</div>
 <div class="hidden md:flex items-center bg-surface-container-low border border-outline-variant rounded px-sm py-xs h-8 ml-xl">
 <span class="material-symbols-outlined text-on-surface-variant text-[18px] mr-xs" data-icon="search">search</span>
-<input class="bg-transparent border-none focus:ring-0 text-body-md font-body-md text-on-surface placeholder:text-outline p-0 w-64 h-full outline-none" placeholder="Search operations..." type="text"/>
+<input class="bg-transparent border-none focus:ring-0 text-body-md font-body-md text-on-surface placeholder:text-outline p-0 w-64 h-full outline-none" placeholder="Search BIN, Issuer, Gateway, Error Code..." type="text"/>
 </div>
 </div>
 <div class="flex items-center gap-md">
@@ -207,7 +207,7 @@
 <button class="h-8 px-sm bg-surface-container border border-outline-variant rounded flex items-center justify-center font-label-sm text-label-sm text-on-surface hover:bg-surface-container-high transition-colors">
                 Workspace
             </button>
-<img alt="User avatar" class="w-8 h-8 rounded-full border border-outline-variant" src="https://lh3.googleusercontent.com/aida/ADBb0ujeDmVl0s-r-yH8ZVLWpJBzF3zYskAa1KJsN6HJWYEw-hxQRFqsJJgOTTvcAtFIERaxqhpKoUB7kXUV36wBnuUpRJgvrw1USrfY-R3FRB7CUyXgYP4trpU3KNXuenudL9_wKrE1NB5Ae9HCJvvRcRexcBsfmvpIEbDeNjaKE2ysWRSMohgyEXtEEnFPWwx7VKe3Hr0eO_kw7oDpF6ZsFfSecvUPnmtbqHqxouvfGsBStLdmMgR8n3gq1w"/>
+<img alt="User avatar" class="w-8 h-8 rounded-full border border-outline-variant" src="../assets/logo.png"/>
 </div>
 </header>
 <div class="flex flex-1 overflow-hidden">
@@ -219,23 +219,23 @@
 </div>
 <div>
 <div class="font-h4 text-h4 text-on-surface">OPERATIONS</div>
-<div class="font-mono-data text-mono-data text-on-surface-variant">v2.4.0-stable</div>
+<div class="font-mono-data text-mono-data text-on-surface-variant">v0.1.0</div>
 </div>
 </div>
 <div class="flex flex-col gap-xs flex-1">
-<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="command-dashboard.html">
 <span class="material-symbols-outlined text-[20px]" data-icon="terminal">terminal</span>
 <span class="font-label-sm text-label-sm uppercase tracking-widest">Command</span>
 </a>
-<a class="group flex items-center gap-sm px-md py-xs text-secondary dark:text-secondary bg-surface-container-low border-r-2 border-secondary hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<a class="group flex items-center gap-sm px-md py-xs text-secondary dark:text-secondary bg-surface-container-low border-r-2 border-secondary hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="signals-feed.html">
 <span class="material-symbols-outlined text-[20px]" data-icon="sensors">sensors</span>
 <span class="font-label-sm text-label-sm uppercase tracking-widest">Signals</span>
 </a>
-<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="approvals-queue.html">
 <span class="material-symbols-outlined text-[20px]" data-icon="verified_user">verified_user</span>
 <span class="font-label-sm text-label-sm uppercase tracking-widest">Approvals</span>
 </a>
-<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="../index.html">
 <span class="material-symbols-outlined text-[20px]" data-icon="analytics">analytics</span>
 <span class="font-label-sm text-label-sm uppercase tracking-widest">Dashboards</span>
 </a>
@@ -243,14 +243,14 @@
 <span class="material-symbols-outlined text-[20px]" data-icon="group">group</span>
 <span class="font-label-sm text-label-sm uppercase tracking-widest">Customers</span>
 </a>
-<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="#">
+<a class="group flex items-center gap-sm px-md py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface hover:bg-surface-container-high transition-all" href="executive-reports.html">
 <span class="material-symbols-outlined text-[20px]" data-icon="description">description</span>
 <span class="font-label-sm text-label-sm uppercase tracking-widest">Reports</span>
 </a>
 </div>
 <div class="px-md mt-auto pt-lg">
 <button class="w-full bg-[#5E6BFF] text-[#F0F1F2] h-8 rounded flex items-center justify-center font-label-sm text-label-sm hover:opacity-90 transition-opacity mb-md">
-                    Launch Terminal
+                    Launch Sandbox
                 </button>
 <div class="flex flex-col gap-xs">
 <a class="group flex items-center gap-sm py-xs text-on-surface-variant dark:text-on-surface-variant hover:text-on-surface dark:hover:text-on-surface transition-all" href="#">
@@ -269,7 +269,7 @@
 <!-- Page Header -->
 <div class="px-xl py-lg border-b border-internal">
 <h1 class="font-h1 text-h1 text-on-surface mb-xs">Signals</h1>
-<p class="font-body-md text-body-md text-outline">Scattered inputs normalized into one operating layer</p>
+<p class="font-body-md text-body-md text-outline">Real-time payment cohort telemetry and causal degradation diagnosis (DETECT & DIAGNOSE)</p>
 </div>
 <!-- Filters Bar -->
 <div class="px-xl py-sm border-b border-internal bg-panel flex items-center gap-md">
@@ -315,7 +315,7 @@
 <div class="grid grid-cols-[auto_1fr_1fr_100px_100px_1fr_120px] gap-sm px-md h-10 border-b border-internal bg-panel-alt hover:bg-surface-container cursor-pointer items-center relative group">
 <div class="absolute left-0 top-0 bottom-0 w-[2px] bg-[#5E6BFF]"></div>
 <div class="w-4 h-4 border border-outline-variant rounded bg-[#101112]"></div>
-<div class="font-mono-data text-mono-data text-on-surface">LATENCY_SPIKE</div>
+<div class="font-mono-data text-mono-data text-on-surface">AUTHORIZATION_STEP_DEGRADATION</div>
 <div class="font-body-md text-body-md text-on-surface-variant flex items-center gap-xs">
 <span class="material-symbols-outlined text-[14px]" data-icon="cloud">cloud</span> AWS-US-EAST
                                 </div>
@@ -323,14 +323,14 @@
 <div class="w-1.5 h-1.5 rounded-full bg-error"></div>
 <span class="font-label-sm text-label-sm text-error">CRITICAL</span>
 </div>
-<div class="font-mono-data text-mono-data text-on-surface">98%</div>
+<div class="font-mono-data text-mono-data text-on-surface">100%</div>
 <div class="font-body-md text-body-md text-outline">Unassigned</div>
 <div class="font-mono-data text-mono-data text-outline text-right">2m ago</div>
 </div>
 <!-- Row 2 -->
 <div class="grid grid-cols-[auto_1fr_1fr_100px_100px_1fr_120px] gap-sm px-md h-10 border-b border-internal bg-panel hover:bg-surface-container cursor-pointer items-center group">
 <div class="w-4 h-4 border border-outline-variant rounded bg-[#101112]"></div>
-<div class="font-mono-data text-mono-data text-on-surface">BILLING_DRIFT</div>
+<div class="font-mono-data text-mono-data text-on-surface">BANK_SPECIFIC_DEGRADATION</div>
 <div class="font-body-md text-body-md text-on-surface-variant flex items-center gap-xs">
 <span class="material-symbols-outlined text-[14px]" data-icon="payments">payments</span> Stripe-Prod
                                 </div>
@@ -345,9 +345,9 @@
 <!-- Row 3 -->
 <div class="grid grid-cols-[auto_1fr_1fr_100px_100px_1fr_120px] gap-sm px-md h-10 border-b border-internal bg-panel hover:bg-surface-container cursor-pointer items-center group">
 <div class="w-4 h-4 border border-outline-variant rounded bg-[#101112]"></div>
-<div class="font-mono-data text-mono-data text-on-surface">VECTOR_SYNC</div>
+<div class="font-mono-data text-mono-data text-on-surface">PAYMENT_METHOD_DEGRADATION</div>
 <div class="font-body-md text-body-md text-on-surface-variant flex items-center gap-xs">
-<span class="material-symbols-outlined text-[14px]" data-icon="database">database</span> Pinecone-EU
+<span class="material-symbols-outlined text-[14px]" data-icon="database">database</span> Netbanking • ICICI
                                 </div>
 <div class="flex items-center gap-xs">
 <div class="w-1.5 h-1.5 rounded-full bg-secondary"></div>
@@ -360,9 +360,9 @@
 <!-- Additional Rows to fill out density -->
 <div class="grid grid-cols-[auto_1fr_1fr_100px_100px_1fr_120px] gap-sm px-md h-10 border-b border-internal bg-panel hover:bg-surface-container cursor-pointer items-center group">
 <div class="w-4 h-4 border border-outline-variant rounded bg-[#101112]"></div>
-<div class="font-mono-data text-mono-data text-on-surface">AUTH_TIMEOUT</div>
+<div class="font-mono-data text-mono-data text-on-surface">ERROR_CODE_SPIKE</div>
 <div class="font-body-md text-body-md text-on-surface-variant flex items-center gap-xs">
-<span class="material-symbols-outlined text-[14px]" data-icon="lock">lock</span> Auth0-Main
+<span class="material-symbols-outlined text-[14px]" data-icon="lock">lock</span> Card • Axis (INSUFFICIENT_FUNDS)
                                 </div>
 <div class="flex items-center gap-xs">
 <div class="w-1.5 h-1.5 rounded-full bg-tertiary-container"></div>
@@ -386,7 +386,7 @@
 <div class="w-1.5 h-1.5 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.4)]"></div>
 <span class="font-label-sm text-label-sm text-error uppercase">Critical</span>
 </div>
-<h2 class="font-h3 text-h3 text-on-surface font-mono-data">LATENCY_SPIKE</h2>
+<h2 class="font-h3 text-h3 text-on-surface font-mono-data">AUTHORIZATION_STEP_DEGRADATION</h2>
 <p class="font-body-md text-body-md text-outline mt-xs">API Gateway response time exceeded 2000ms threshold.</p>
 </div>
 <button class="text-outline hover:text-on-surface">
@@ -395,10 +395,10 @@
 </div>
 <div class="flex gap-sm">
 <button class="flex-1 bg-[#5E6BFF] text-[#F0F1F2] h-8 rounded flex items-center justify-center font-label-sm text-label-sm hover:opacity-90 transition-opacity">
-                                Acknowledge
+                                Propose Recovery Decision
                             </button>
 <button class="flex-1 bg-transparent border border-[#232426] text-[#F0F1F2] h-8 rounded flex items-center justify-center font-label-sm text-label-sm hover:bg-surface-container transition-colors">
-                                Route to Owner
+                                View Cohort Telemetry
                             </button>
 <button class="w-8 h-8 bg-transparent border border-[#232426] text-[#F0F1F2] rounded flex items-center justify-center hover:bg-surface-container transition-colors">
 <span class="material-symbols-outlined text-[16px]" data-icon="more_vert">more_vert</span>
@@ -414,7 +414,7 @@
                                 <span class="material-symbols-outlined text-[14px]" data-icon="info">info</span>
 </h3>
 <div class="flex items-baseline gap-sm">
-<span class="font-h1 text-h1 text-on-surface">98%</span>
+<span class="font-h1 text-h1 text-on-surface">100%</span>
 <span class="font-body-md text-body-md text-error flex items-center">
 <span class="material-symbols-outlined text-[16px]" data-icon="trending_up">trending_up</span> +12%
                                 </span>
@@ -457,8 +457,8 @@
 <div class="flex items-center gap-sm">
 <span class="material-symbols-outlined text-[16px] text-primary" data-icon="sync_alt">sync_alt</span>
 <div>
-<div class="font-mono-data text-mono-data text-on-surface">REQ-8892</div>
-<div class="font-label-sm text-label-sm text-outline">Scale up API Nodes</div>
+<div class="font-mono-data text-mono-data text-on-surface">INC-HDFC-UPI</div>
+<div class="font-label-sm text-label-sm text-outline">Execute Recommended Action: retry (₹14,000 Expected Recovery)</div>
 </div>
 </div>
 <span class="font-label-sm text-label-sm px-xs py-[2px] bg-secondary-container/20 text-secondary border border-secondary/30 rounded">PENDING</span>

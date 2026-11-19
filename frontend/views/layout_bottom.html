@@ -1,3 +1,5 @@
+    </main>
+
     <!-- Minimal Footer -->
     <footer class="bg-bg-carbon border-t border-border-hairline py-6 px-8 mt-12">
         <div class="max-w-[1600px] mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-text-muted text-[12px] font-mono">
@@ -7,58 +9,139 @@
     </footer>
 
     <script>
+        // ------------------------------------------------------------------
         // Application State
+        //
+        // Every figure shown comes from the backend. Recovered revenue is only
+        // ever what the backend has verified (signed webhook or the dev
+        // checkout simulator, which settles through the same verification
+        // path). Nothing is recorded as recovered in the browser.
+        // ------------------------------------------------------------------
         const AppState = {
             summary: null,
             incidents: [],
             activeIncident: null,
             recoveries: [],
-            activeRecovery: null,
-            auditEvents: []
+            activeRecoveryId: null,   // operator's selection; stays stable across refreshes
+            auditEvents: [],
+            apiAvailable: false
         };
 
-        const SIM_KEY = 'recoverai_demo_simulated_recovered';
+        const PLACEHOLDER = '—';
 
-        function getSimulatedState() {
+        // Elements whose design-time sample values must never be shown as live data.
+        const LIVE_FIELD_IDS = [
+            'cmd-incident-id-display', 'cmd-revenue-at-risk', 'cmd-failed-payments', 'cmd-subtitle',
+            'cmd-cohort-channel', 'cmd-cohort-step', 'cmd-curr-failure-rate', 'cmd-baseline-failure-rate',
+            'cmd-rate-delta', 'cmd-diagnosis-title', 'cmd-diagnosis-explanation', 'cmd-evidence-bank',
+            'cmd-evidence-method', 'cmd-evidence-code', 'cmd-evidence-step', 'cmd-action-name',
+            'cmd-hist-rate', 'cmd-hist-attempts', 'cmd-expected-recovery', 'cmd-guardrail-note',
+            'inc-confidence-badge', 'inc-bank-method', 'inc-error-code', 'inc-error-step', 'inc-failure-jump',
+            'inc-diag-explanation', 'inc-base-total', 'inc-base-failed', 'inc-base-rate', 'inc-base-vol',
+            'inc-curr-total', 'inc-curr-failed', 'inc-curr-rate', 'inc-curr-vol',
+            'dec-action-hero', 'dec-recovery-id', 'dec-attempt-status', 'dec-revenue-at-risk-label',
+            'dec-expected-net', 'dec-hist-attempts', 'dec-hist-rate', 'dec-hist-calibration',
+            'dec-incentive-cost', 'dec-rationale', 'cmd-rate-note', 'cmd-expected-note', 'inc-diag-heading',
+            'camp-table-count', 'camp-target-count', 'camp-target-volume', 'camp-recovered-volume', 'camp-status-badge',
+            'header-merchant-name'
+        ];
+
+        function clearLiveFields() {
+            LIVE_FIELD_IDS.forEach(id => setText(id, PLACEHOLDER));
+        }
+
+        // --- Safe DOM helpers ---
+
+        function escapeHtml(value) {
+            if (value === undefined || value === null) return '';
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function setText(id, value) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = (value === undefined || value === null || value === '') ? PLACEHOLDER : value;
+        }
+
+        // Only http(s) URLs and the same-origin checkout simulator may be linked.
+        function safePaymentUrl(shortUrl) {
+            if (!shortUrl || typeof shortUrl !== 'string') return null;
+            if (shortUrl.startsWith('/pay.html')) return shortUrl;
             try {
-                const stored = localStorage.getItem(SIM_KEY);
-                return stored ? JSON.parse(stored) : { count: 0, amount: 0, recoveredIds: [] };
+                const parsed = new URL(shortUrl);
+                return (parsed.protocol === 'https:' || parsed.protocol === 'http:') ? parsed.href : null;
             } catch (e) {
-                return { count: 0, amount: 0, recoveredIds: [] };
+                return null;
             }
         }
 
-        function recordSimulatedPayment(recoveryId = null, amount = 1250) {
-            try {
-                const state = getSimulatedState();
-                const activeRec = recoveryId || (AppState.activeRecovery ? AppState.activeRecovery.recovery_id : 'rec_plan_01');
-                if (!state.recoveredIds.includes(activeRec)) {
-                    state.recoveredIds.push(activeRec);
-                    state.count = state.recoveredIds.length;
-                    state.amount += amount;
-                    localStorage.setItem(SIM_KEY, JSON.stringify(state));
-                }
-                // Re-render UI immediately
-                renderCommandCenter();
-                renderIncidentDetail();
-                renderDecisionRoom();
-                renderCampaign();
-                renderAuditTrail();
-            } catch (e) {
-                console.warn('Failed to record simulated payment:', e);
-            }
+        // --- Formatting (amounts are integer paise from the API) ---
+
+        function formatINR(paise) {
+            if (paise === undefined || paise === null || isNaN(Number(paise))) return PLACEHOLDER;
+            const rupees = Number(paise) / 100;
+            return '₹' + rupees.toLocaleString('en-IN', { maximumFractionDigits: 2 });
         }
 
-        function resetSimulatedPayment() {
-            try {
-                localStorage.removeItem(SIM_KEY);
-                renderCommandCenter();
-                renderIncidentDetail();
-                renderDecisionRoom();
-                renderCampaign();
-                renderAuditTrail();
-            } catch (e) {}
+        function formatPercent(val) {
+            if (val === undefined || val === null || isNaN(Number(val))) return PLACEHOLDER;
+            return (Number(val) * 100).toFixed(1) + '%';
         }
+
+        function titleCase(text) {
+            if (!text) return PLACEHOLDER;
+            return text.charAt(0).toUpperCase() + text.slice(1);
+        }
+
+        // --- Derived data ---
+
+        function incidentRecoveries() {
+            const inc = AppState.activeIncident;
+            const all = AppState.recoveries || [];
+            return inc ? all.filter(r => r.incident_id === inc.id) : [];
+        }
+
+        function getActiveRecovery() {
+            const all = AppState.recoveries || [];
+            if (AppState.activeRecoveryId) {
+                const selected = all.find(r => r.recovery_id === AppState.activeRecoveryId);
+                if (selected) return selected;
+            }
+            // Default selection: first actionable attempt of the active incident.
+            const scoped = incidentRecoveries();
+            const pick = scoped.find(r => r.status === 'pending' || r.status === 'approved')
+                || scoped.find(r => r.status === 'executed')
+                || scoped[0]
+                || null;
+            AppState.activeRecoveryId = pick ? pick.recovery_id : null;
+            return pick;
+        }
+
+        function selectRecovery(recoveryId) {
+            AppState.activeRecoveryId = recoveryId;
+            renderAll();
+            refreshAuditTrail();
+        }
+
+        function campaignTotals() {
+            const recs = incidentRecoveries();
+            const targetVolume = recs.reduce((acc, r) => acc + (r.payment_amount || 0), 0);
+            const recovered = recs.filter(r => r.status === 'recovered');
+            const recoveredVolume = recovered.reduce((acc, r) => acc + (r.recovered_amount || 0), 0);
+            return {
+                recs,
+                targetCount: recs.length,
+                targetVolume,
+                recoveredCount: recovered.length,
+                recoveredVolume,
+            };
+        }
+
+        // --- Navigation ---
 
         function navigate(viewId) {
             const views = ['command', 'incidents', 'decision', 'campaign', 'trace'];
@@ -81,7 +164,6 @@
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
 
-            // Refresh specific view if needed
             if (viewId === 'campaign' || viewId === 'decision') {
                 refreshRecoveries();
             } else if (viewId === 'trace') {
@@ -89,184 +171,138 @@
             }
         }
 
-        // Formatting Helpers
-        function formatINR(val) {
-            if (val === undefined || val === null) return '₹0';
-            return '₹' + Number(val).toLocaleString('en-IN');
-        }
-
-        function formatPercent(val) {
-            if (val === undefined || val === null) return '0.0%';
-            return (Number(val) * 100).toFixed(1) + '%';
-        }
-
         // --- View Renderers ---
+
+        function renderAll() {
+            renderCommandCenter();
+            renderIncidentDetail();
+            renderDecisionRoom();
+            renderCampaign();
+        }
 
         function renderCommandCenter() {
             const inc = AppState.activeIncident;
-            const sum = AppState.summary;
-            const sim = getSimulatedState();
+            const rec = getActiveRecovery();
+            const totals = campaignTotals();
 
-            const baseRevAtRisk = (inc && inc.revenue_at_risk !== undefined && inc.revenue_at_risk !== null)
-                ? inc.revenue_at_risk 
-                : (sum && sum.revenue_at_risk ? sum.revenue_at_risk : 14000);
-            const baseFailedCount = (inc && inc.current_failed_count !== undefined && inc.current_failed_count !== null)
-                ? inc.current_failed_count 
-                : (sum && sum.failed_payments ? sum.failed_payments : 8);
+            if (!inc) {
+                setText('cmd-status-label', AppState.apiAvailable ? 'No Active Degradation' : 'Telemetry Unavailable');
+                return;
+            }
 
-            const effectiveRevAtRisk = Math.max(0, baseRevAtRisk - (sim.amount || 0));
-            const effectiveFailedCount = Math.max(0, baseFailedCount - (sim.count || 0));
+            const riskBase = inc.revenue_at_risk;
+            const outstanding = Math.max(0, riskBase - totals.recoveredVolume);
+            const targetCount = totals.targetCount || inc.current_failed_count;
+            const remaining = Math.max(0, targetCount - totals.recoveredCount);
 
-            const elRisk = document.getElementById('cmd-revenue-at-risk');
-            if (elRisk) elRisk.innerText = formatINR(effectiveRevAtRisk);
+            setText('cmd-revenue-at-risk', formatINR(outstanding));
 
             const elFailed = document.getElementById('cmd-failed-payments');
             if (elFailed) {
-                if (sim.count > 0) {
-                    elFailed.innerHTML = `Consequence: <span class="text-white font-medium">${effectiveFailedCount} failed payments remaining</span> &rarr; <span class="text-accent-coral font-medium">${formatINR(effectiveRevAtRisk)} at risk</span> &bull; <span class="text-accent-green font-medium">${formatINR(sim.amount)} verified recovered</span>`;
-                } else {
-                    elFailed.innerHTML = `Consequence: <span class="text-white font-medium">${baseFailedCount} failed payments</span> &rarr; <span class="text-accent-coral font-medium">${formatINR(baseRevAtRisk)} at risk</span>`;
+                let html = `Consequence: <span class="text-white font-medium">${escapeHtml(remaining)} failed payments${totals.recoveredCount ? ' remaining' : ''}</span> &rarr; <span class="text-accent-coral font-medium">${escapeHtml(formatINR(outstanding))} at risk</span>`;
+                if (totals.recoveredCount) {
+                    html += ` &bull; <span class="text-accent-green font-medium">${escapeHtml(formatINR(totals.recoveredVolume))} verified recovered</span>`;
                 }
+                elFailed.innerHTML = html;
             }
 
-            if (inc) {
-                const elSubtitle = document.getElementById('cmd-subtitle');
-                if (elSubtitle) elSubtitle.innerHTML = `Acute authorization failure spike detected in <span class="text-white font-medium">${inc.bank || 'HDFC'} ${(inc.method || 'UPI').toUpperCase()}</span> traffic. ${baseFailedCount} customer checkouts failed upstream.`;
-
-                const elId = document.getElementById('cmd-incident-id-display');
-                if (elId) elId.innerText = 'ID: ' + inc.id.substring(0, 8);
-
-                const elChannel = document.getElementById('cmd-cohort-channel');
-                if (elChannel) elChannel.innerText = `${inc.bank || 'HDFC'} · ${(inc.method || 'UPI').toUpperCase()}`;
-
-                const elStep = document.getElementById('cmd-cohort-step');
-                if (elStep) elStep.innerText = inc.error_step === 'payment_authorization' 
-                    ? 'Authorization-step degradation in payment gateway integration' 
-                    : (inc.error_step || 'Gateway degradation');
-
-                const elCurrRate = document.getElementById('cmd-curr-failure-rate');
-                if (elCurrRate) elCurrRate.innerText = formatPercent(inc.current_failure_rate ?? 0.2857);
-
-                const elBaseRate = document.getElementById('cmd-baseline-failure-rate');
-                if (elBaseRate) elBaseRate.innerText = `vs ${formatPercent(inc.baseline_failure_rate ?? 0.0333)} baseline`;
-
-                const elDelta = document.getElementById('cmd-rate-delta');
-                const rateIncrease = (inc.absolute_rate_increase !== undefined && inc.absolute_rate_increase !== null) 
-                    ? inc.absolute_rate_increase 
-                    : ((inc.current_failure_rate || 0.2857) - (inc.baseline_failure_rate || 0.0333));
-                if (elDelta) elDelta.innerText = `+${(rateIncrease * 100).toFixed(1)}% pts`;
-
-                const elBank = document.getElementById('cmd-evidence-bank');
-                if (elBank) elBank.innerText = (inc.bank || 'HDFC') + ' Bank';
-
-                const elMethod = document.getElementById('cmd-evidence-method');
-                if (elMethod) elMethod.innerText = (inc.method || 'UPI').toUpperCase();
-
-                const elCode = document.getElementById('cmd-evidence-code');
-                if (elCode) elCode.innerText = inc.error_code || 'GATEWAY_ERROR';
-
-                const elEvStep = document.getElementById('cmd-evidence-step');
-                if (elEvStep) elEvStep.innerText = inc.error_step || 'payment_authorization';
-
-                if (inc.diagnosis) {
-                    const elDiagTitle = document.getElementById('cmd-diagnosis-title');
-                    if (elDiagTitle) elDiagTitle.innerText = inc.diagnosis.diagnosis_type 
-                        ? inc.diagnosis.diagnosis_type.charAt(0).toUpperCase() + inc.diagnosis.diagnosis_type.slice(1)
-                        : 'Diagnosed Payment Authorization Degradation';
-
-                    const elDiagExp = document.getElementById('cmd-diagnosis-explanation');
-                    if (elDiagExp) elDiagExp.innerText = inc.diagnosis.explanation || 'Deterministic root-cause synthesis confirms gateway timeouts during authorization.';
-                }
+            const channel = `${inc.bank || 'UNKNOWN'} · ${(inc.method || 'UNKNOWN').toUpperCase()}`;
+            const elSubtitle = document.getElementById('cmd-subtitle');
+            if (elSubtitle) {
+                elSubtitle.innerHTML = `Failure spike detected in <span class="text-white font-medium">${escapeHtml(channel)}</span> traffic. ${escapeHtml(inc.current_failed_count)} customer checkouts failed in the detection window.`;
             }
 
-            const rec = AppState.activeRecovery;
-            const elAction = document.getElementById('cmd-action-name');
-            if (elAction) elAction.innerText = (rec && rec.selected_action) ? rec.selected_action.charAt(0).toUpperCase() + rec.selected_action.slice(1) : 'Retry';
+            setText('cmd-status-label', inc.status === 'resolved' ? 'Incident Resolved' : 'Active Degradation Detected');
+            setText('cmd-incident-id-display', 'ID: ' + String(inc.id).substring(0, 8));
+            setText('cmd-cohort-channel', channel);
+            setText('cmd-cohort-step', inc.error_step === 'payment_authorization'
+                ? 'Authorization-step degradation in payment gateway integration'
+                : inc.error_step);
+            setText('cmd-curr-failure-rate', formatPercent(inc.current_failure_rate));
+            setText('cmd-baseline-failure-rate', `vs ${formatPercent(inc.baseline_failure_rate)} baseline`);
+            setText('cmd-rate-delta', inc.absolute_rate_increase === undefined || inc.absolute_rate_increase === null
+                ? PLACEHOLDER
+                : `+${(inc.absolute_rate_increase * 100).toFixed(1)}% pts`);
+            setText('cmd-rate-note', inc.relative_degradation === undefined || inc.relative_degradation === null
+                ? null
+                : `${Number(inc.relative_degradation).toFixed(1)}x elevation above baseline failure rate`);
+            setText('cmd-evidence-bank', inc.bank ? inc.bank + ' Bank' : null);
+            setText('cmd-evidence-method', inc.method ? inc.method.toUpperCase() : null);
+            setText('cmd-evidence-code', inc.error_code);
+            setText('cmd-evidence-step', inc.error_step);
 
-            const elExpected = document.getElementById('cmd-expected-recovery');
-            if (elExpected) elExpected.innerText = formatINR(baseRevAtRisk);
+            if (inc.diagnosis) {
+                setText('cmd-diagnosis-title', titleCase(inc.diagnosis.diagnosis_type));
+                setText('cmd-diagnosis-explanation', inc.diagnosis.explanation);
+            }
+
+            const evidence = (rec && rec.decision_evidence) || {};
+            setText('cmd-action-name', rec ? titleCase(rec.selected_action) : null);
+            setText('cmd-hist-rate', formatPercent(evidence.expected_recovery_rate).replace('.0%', '%'));
+            setText('cmd-hist-attempts', evidence.historical_sample_size !== undefined
+                ? `Observed rate across ${evidence.historical_sample_size} attempts (${evidence.rate_source || 'configured'})`
+                : null);
+            setText('cmd-expected-recovery', evidence.expected_net_recovery_value !== undefined
+                ? formatINR(evidence.expected_net_recovery_value)
+                : null);
+            if (evidence.expected_recovery_rate !== undefined) {
+                const incentiveTotal = totals.recs.reduce((acc, r) => acc + (r.incentive_amount || 0), 0);
+                setText('cmd-expected-note', `${formatINR(incentiveTotal)} incentive cost \u2022 ${formatPercent(evidence.expected_recovery_rate)} expected yield`);
+            } else {
+                setText('cmd-expected-note', null);
+            }
+            if (evidence.guardrail_decision) {
+                setText('cmd-guardrail-note', evidence.guardrail_decision === 'allowed'
+                    ? 'Guardrails passed: Execution permitted autonomously'
+                    : `Guardrails: ${evidence.guardrail_decision.replace('_', ' ')} (${evidence.guardrail_reason_code || ''})`);
+            }
         }
 
         function renderIncidentDetail() {
             const inc = AppState.activeIncident;
             if (!inc) return;
-            const sim = getSimulatedState();
 
-            const baseFailed = inc.current_failed_count ?? 8;
-            const effectiveFailed = Math.max(0, baseFailed - (sim.count || 0));
-            const baseRisk = inc.current_failed_amount ?? inc.revenue_at_risk ?? 14000;
-            const effectiveRisk = Math.max(0, baseRisk - (sim.amount || 0));
+            setText('inc-bank-method', `${inc.bank || 'UNKNOWN'} · ${(inc.method || 'UNKNOWN').toUpperCase()}`);
+            setText('inc-error-code', inc.error_code);
+            setText('inc-error-step', inc.error_step);
+            setText('inc-failure-jump', `${formatPercent(inc.current_failure_rate)} vs ${formatPercent(inc.baseline_failure_rate)}`);
+            setText('inc-base-total', inc.baseline_total_count);
+            setText('inc-base-failed', inc.baseline_failed_count);
+            setText('inc-base-rate', formatPercent(inc.baseline_failure_rate));
+            setText('inc-base-vol', formatINR(inc.baseline_failed_amount));
+            setText('inc-curr-total', inc.current_total_count);
+            setText('inc-curr-failed', inc.current_failed_count);
+            setText('inc-curr-rate', formatPercent(inc.current_failure_rate));
+            setText('inc-curr-vol', formatINR(inc.current_failed_amount));
 
-            const elBankMethod = document.getElementById('inc-bank-method');
-            if (elBankMethod) elBankMethod.innerText = `${inc.bank || 'HDFC'} · ${(inc.method || 'UPI').toUpperCase()}`;
-
-            const elCode = document.getElementById('inc-error-code');
-            if (elCode) elCode.innerText = inc.error_code || 'GATEWAY_ERROR';
-
-            const elStep = document.getElementById('inc-error-step');
-            if (elStep) elStep.innerText = inc.error_step || 'payment_authorization';
-
-            const elJump = document.getElementById('inc-failure-jump');
-            if (elJump) elJump.innerText = `${formatPercent(inc.current_failure_rate ?? 0.2857)} vs ${formatPercent(inc.baseline_failure_rate ?? 0.0333)}`;
-
-            const elBaseTotal = document.getElementById('inc-base-total');
-            if (elBaseTotal) elBaseTotal.innerText = inc.baseline_total_count ?? 30;
-
-            const elBaseFailed = document.getElementById('inc-base-failed');
-            if (elBaseFailed) elBaseFailed.innerText = inc.baseline_failed_count ?? 1;
-
-            const elBaseRate = document.getElementById('inc-base-rate');
-            if (elBaseRate) elBaseRate.innerText = formatPercent(inc.baseline_failure_rate ?? 0.0333);
-
-            const elBaseVol = document.getElementById('inc-base-vol');
-            if (elBaseVol) elBaseVol.innerText = formatINR(inc.baseline_failed_amount ?? 10000);
-
-            const elCurrTotal = document.getElementById('inc-curr-total');
-            if (elCurrTotal) elCurrTotal.innerText = inc.current_total_count ?? 28;
-
-            const elCurrFailed = document.getElementById('inc-curr-failed');
-            if (elCurrFailed) elCurrFailed.innerText = effectiveFailed;
-
-            const elCurrRate = document.getElementById('inc-curr-rate');
-            if (elCurrRate) elCurrRate.innerText = formatPercent(inc.current_failure_rate ?? 0.2857);
-
-            const elCurrVol = document.getElementById('inc-curr-vol');
-            if (elCurrVol) elCurrVol.innerText = formatINR(effectiveRisk);
+            setText('inc-diag-heading', inc.diagnosis
+                ? `Diagnosis Synthesis \u2022 ${titleCase(inc.diagnosis.diagnosis_type)}`
+                : 'Diagnosis Synthesis');
 
             if (inc.diagnosis) {
-                const elConf = document.getElementById('inc-confidence-badge');
-                if (elConf) elConf.innerText = `CONFIDENCE ${(inc.diagnosis.confidence * 100).toFixed(0)}%`;
-
-                const elExp = document.getElementById('inc-diag-explanation');
-                if (elExp) elExp.innerText = inc.diagnosis.explanation;
+                setText('inc-confidence-badge', `CONFIDENCE ${(inc.diagnosis.confidence * 100).toFixed(0)}%`);
+                setText('inc-diag-explanation', inc.diagnosis.explanation);
             }
 
-            // Render Associated Attempts
+            const attempts = incidentRecoveries();
+            setText('inc-attempts-count', `Records: ${attempts.length}`);
             const listEl = document.getElementById('inc-attempts-list');
-            const countEl = document.getElementById('inc-attempts-count');
-            const attempts = (inc.recovery_attempts && inc.recovery_attempts.length > 0)
-                ? inc.recovery_attempts
-                : (AppState.recoveries || []).filter(r => r.incident_id === inc.id);
-            
-            if (countEl) countEl.innerText = `Records: ${attempts.length}`;
             if (listEl) {
                 if (attempts.length === 0) {
                     listEl.innerHTML = '<div class="text-text-muted text-center py-4 font-body">No associated recovery attempts yet.</div>';
                 } else {
-                    listEl.innerHTML = attempts.slice(0, 10).map((att, idx) => {
-                        const isSimRecovered = sim.recoveredIds.includes(att.recovery_id) || (idx === 0 && sim.count > 0);
-                        const statusText = isSimRecovered ? 'recovered' : att.status;
-                        const statusDisplay = isSimRecovered 
-                            ? '₹1,250' 
-                            : (att.recovered_amount ? formatINR(att.recovered_amount) : (att.status === 'recovered' ? '₹1,250' : (att.status === 'executed' ? 'Link Dispatched' : 'Awaiting Action')));
-
+                    listEl.innerHTML = attempts.slice(0, 10).map(att => {
+                        let statusDisplay = 'Awaiting Action';
+                        if (att.status === 'recovered') statusDisplay = formatINR(att.recovered_amount);
+                        else if (att.status === 'executed') statusDisplay = 'Link Dispatched';
+                        else if (att.status === 'expired' || att.status === 'failed') statusDisplay = 'Not Recovered';
                         return `
                             <div class="p-2.5 rounded bg-surface-elevated border border-border-hairline flex justify-between items-center">
                                 <div>
-                                    <div class="text-white font-bold">${att.recovery_id}</div>
-                                    <div class="text-[11px] text-text-muted">Action: ${att.selected_action} &bull; Status: ${statusText}</div>
+                                    <div class="text-white font-bold">${escapeHtml(att.recovery_id)}</div>
+                                    <div class="text-[11px] text-text-muted">Action: ${escapeHtml(att.selected_action)} &bull; Amount: ${escapeHtml(formatINR(att.payment_amount))} &bull; Status: ${escapeHtml(att.status)}</div>
                                 </div>
-                                <span class="text-accent-cyan font-bold">${statusDisplay}</span>
+                                <span class="text-accent-cyan font-bold">${escapeHtml(statusDisplay)}</span>
                             </div>
                         `;
                     }).join('');
@@ -274,509 +310,459 @@
             }
         }
 
-        function resolvePaymentUrl(shortUrl, recoveryId, linkId, amount = 1250) {
-            if (!shortUrl) return '#';
-            if (shortUrl.startsWith('/pay.html') || shortUrl.startsWith('pay.html') || shortUrl.includes('127.0.0.1:5173') || shortUrl.includes('localhost:5173')) {
-                return shortUrl;
+        function renderDecisionRoom() {
+            const rec = getActiveRecovery();
+            const inc = AppState.activeIncident;
+            const totals = campaignTotals();
+            const evidence = (rec && rec.decision_evidence) || {};
+
+            const outstanding = inc ? Math.max(0, inc.revenue_at_risk - totals.recoveredVolume) : null;
+            setText('dec-revenue-at-risk-label', formatINR(outstanding));
+
+            if (evidence.expected_net_recovery_value !== undefined) {
+                const rate = evidence.expected_recovery_rate;
+                setText('dec-expected-net', `${formatINR(evidence.expected_net_recovery_value)}${rate !== undefined ? ` (${formatPercent(rate)} expected yield)` : ''}`);
+            } else {
+                setText('dec-expected-net', null);
             }
-            // For test simulation, open local interactive checkout simulator
-            return `/pay.html?id=${encodeURIComponent(linkId || 'plink_live')}&ref=${encodeURIComponent(recoveryId || 'rec_plan_01')}&amount=${encodeURIComponent(amount)}`;
+
+            renderDecisionEvidence(rec, evidence);
+
+            const btnAction = document.getElementById('btn-decision-action');
+            const btnText = document.getElementById('btn-decision-action-text');
+            const calloutEl = document.getElementById('dec-link-callout');
+
+            if (!rec) {
+                if (btnAction && btnText) {
+                    btnText.textContent = 'No Recovery Plan';
+                    btnAction.disabled = true;
+                }
+                if (calloutEl) calloutEl.classList.add('hidden');
+                return;
+            }
+
+            setText('dec-recovery-id', rec.recovery_id);
+            setText('dec-action-hero', (rec.selected_action || '').toUpperCase());
+
+            const statusLabels = {
+                pending: 'AWAITING APPROVAL',
+                approved: 'APPROVED · READY',
+                executing: 'EXECUTION INTERRUPTED · RETRY',
+                executed: 'AWAITING CUSTOMER PAYMENT',
+                recovered: `VERIFIED RECOVERED (${formatINR(rec.recovered_amount)})`,
+                expired: 'EXPIRED · NOT RECOVERED',
+                failed: 'FAILED · NOT RECOVERED',
+            };
+            setText('dec-attempt-status', statusLabels[rec.status] || (rec.status || '').toUpperCase());
+
+            if (btnAction && btnText) {
+                const base = 'px-5 py-2.5 font-heading font-bold text-[13px] rounded flex items-center gap-2 ';
+                const isOpsReview = rec.selected_action === 'ops_review';
+                if (rec.status === 'recovered') {
+                    btnText.textContent = `Verified Recovered (${formatINR(rec.recovered_amount)})`;
+                    btnAction.disabled = true;
+                    btnAction.className = base + 'bg-accent-green/20 text-accent-green cursor-default border border-accent-green/40';
+                } else if (rec.status === 'pending') {
+                    btnText.textContent = isOpsReview ? 'Acknowledge Ops Review' : 'Approve Recovery';
+                    btnAction.disabled = false;
+                    btnAction.className = base + 'bg-accent-indigo text-white hover:bg-opacity-90 transition-all shadow-sm';
+                } else if ((rec.status === 'approved' || rec.status === 'executing') && !isOpsReview) {
+                    btnText.textContent = rec.status === 'executing' ? 'Resume Execution' : 'Execute Recovery';
+                    btnAction.disabled = false;
+                    btnAction.className = base + 'bg-accent-green text-black hover:bg-opacity-90 transition-all shadow-sm';
+                } else if (rec.status === 'executed') {
+                    btnText.textContent = 'Link Dispatched · Awaiting Payment';
+                    btnAction.disabled = true;
+                    btnAction.className = base + 'bg-surface-elevated text-accent-cyan cursor-default border border-accent-cyan/30';
+                } else {
+                    btnText.textContent = isOpsReview ? 'Ops Review · Handled Manually' : `Status: ${(rec.status || '').toUpperCase()}`;
+                    btnAction.disabled = true;
+                    btnAction.className = base + 'bg-surface-elevated text-text-muted cursor-default border border-border-hairline';
+                }
+            }
+
+            const shortUrlLink = document.getElementById('dec-short-url-link');
+            const payNowBtn = document.getElementById('dec-pay-now-btn');
+            const targetUrl = safePaymentUrl(rec.short_url);
+            if (calloutEl) {
+                if (targetUrl && rec.status === 'executed') {
+                    calloutEl.classList.remove('hidden');
+                    if (shortUrlLink) {
+                        shortUrlLink.textContent = rec.short_url;
+                        shortUrlLink.href = targetUrl;
+                    }
+                    if (payNowBtn) payNowBtn.href = targetUrl;
+                } else {
+                    calloutEl.classList.add('hidden');
+                }
+            }
         }
 
-        function renderDecisionRoom() {
-            let rec = AppState.activeRecovery;
-            const inc = AppState.activeIncident;
-            const allRecoveries = AppState.recoveries || [];
+        function renderDecisionEvidence(rec, evidence) {
+            const hasHistory = evidence.historical_sample_size !== undefined;
+            setText('dec-hist-attempts', hasHistory ? `${evidence.historical_sample_size} historical attempts` : null);
+            setText('dec-hist-rate', evidence.expected_recovery_rate !== undefined
+                ? formatPercent(evidence.expected_recovery_rate) : null);
+            setText('dec-hist-calibration', evidence.rate_source
+                ? (evidence.rate_source === 'configured'
+                    ? 'Configured default (no history yet)'
+                    : `Observed history (${evidence.rate_source.replace(/_/g, ' ')})`)
+                : null);
+            setText('dec-incentive-cost', rec ? formatINR(rec.incentive_amount) + ' per attempt' : null);
 
-            if (!rec && allRecoveries.length > 0) {
-                rec = (inc ? allRecoveries.find(r => r.incident_id === inc.id && (r.status === 'pending' || r.status === 'approved')) : null)
-                    || allRecoveries.find(r => r.status === 'pending' || r.status === 'approved')
-                    || (inc ? allRecoveries.find(r => r.incident_id === inc.id) : null)
-                    || allRecoveries[0];
-                AppState.activeRecovery = rec;
+            const fallbackRationale = evidence.diagnosis_explanation || null;
+            setText('dec-rationale', evidence.concise_decision_reason || fallbackRationale);
+
+            const grid = document.getElementById('dec-guardrail-grid');
+            if (!grid) return;
+            const checks = Array.isArray(evidence.guardrail_checks) ? evidence.guardrail_checks : [];
+            if (checks.length === 0) {
+                grid.innerHTML = '<div class="text-text-muted font-body col-span-full">No guardrail evaluation recorded for this attempt.</div>';
+                return;
             }
-
-            const sim = getSimulatedState();
-
-            const baseRisk = (inc && inc.revenue_at_risk) ? inc.revenue_at_risk : 14000;
-            const effectiveRisk = Math.max(0, baseRisk - (sim.amount || 0));
-            const incentiveCost = rec ? (rec.incentive_amount || 0) : 0;
-            const netROI = effectiveRisk - incentiveCost;
-
-            const elRiskLabel = document.getElementById('dec-revenue-at-risk-label');
-            if (elRiskLabel) elRiskLabel.innerText = formatINR(effectiveRisk);
-
-            const elNet = document.getElementById('dec-expected-net');
-            if (elNet) elNet.innerText = `${formatINR(netROI)} (100% yield)`;
-
-            if (rec) {
-                const isSimRecovered = sim.recoveredIds.includes(rec.recovery_id) || sim.count > 0;
-                const elId = document.getElementById('dec-recovery-id');
-                if (elId) elId.innerText = rec.recovery_id;
-
-                const elActionHero = document.getElementById('dec-action-hero');
-                if (elActionHero) elActionHero.innerText = (rec.selected_action || 'retry').toUpperCase();
-
-                const elStatus = document.getElementById('dec-attempt-status');
-                if (elStatus) {
-                    if (isSimRecovered || rec.status === 'recovered') {
-                        elStatus.innerText = `VERIFIED RECOVERED (${formatINR(sim.amount || rec.recovered_amount || 1250)})`;
-                    } else if (rec.status === 'pending') {
-                        elStatus.innerText = 'AWAITING APPROVAL';
-                    } else if (rec.status === 'approved') {
-                        elStatus.innerText = 'APPROVED · READY';
-                    } else if (rec.status === 'executed') {
-                        elStatus.innerText = 'AWAITING RECOVERY';
-                    } else {
-                        elStatus.innerText = rec.status.toUpperCase();
-                    }
-                }
-
-                // Update Action Button based on backend status & simulation
-                const btnAction = document.getElementById('btn-decision-action');
-                const btnText = document.getElementById('btn-decision-action-text');
-                if (btnAction && btnText) {
-                    if (isSimRecovered || rec.status === 'recovered') {
-                        const recoveredAmt = (sim.amount || rec.recovered_amount || 1250);
-                        btnText.innerText = `Verified Recovered (${formatINR(recoveredAmt)})`;
-                        btnAction.disabled = true;
-                        btnAction.className = 'px-5 py-2.5 bg-accent-green/20 text-accent-green font-heading font-bold text-[13px] rounded cursor-default flex items-center gap-2 border border-accent-green/40';
-                    } else if (rec.status === 'pending') {
-                        btnText.innerText = 'Approve Recovery';
-                        btnAction.disabled = false;
-                        btnAction.className = 'px-5 py-2.5 bg-accent-indigo text-white font-heading font-bold text-[13px] rounded hover:bg-opacity-90 transition-all flex items-center gap-2 shadow-sm';
-                    } else if (rec.status === 'approved') {
-                        btnText.innerText = 'Execute Recovery';
-                        btnAction.disabled = false;
-                        btnAction.className = 'px-5 py-2.5 bg-accent-green text-black font-heading font-bold text-[13px] rounded hover:bg-opacity-90 transition-all flex items-center gap-2 shadow-sm';
-                    } else if (rec.status === 'executing') {
-                        btnText.innerText = 'Executing Links...';
-                        btnAction.disabled = true;
-                    } else if (rec.status === 'executed') {
-                        btnText.innerText = 'Link Dispatched · Awaiting Recovery';
-                        btnAction.disabled = true;
-                        btnAction.className = 'px-5 py-2.5 bg-surface-elevated text-accent-cyan font-heading font-bold text-[13px] rounded cursor-default flex items-center gap-2 border border-accent-cyan/30';
-                    } else {
-                        btnText.innerText = `Status: ${rec.status.toUpperCase()}`;
-                        btnAction.disabled = true;
-                        btnAction.className = 'px-5 py-2.5 bg-surface-elevated text-text-muted font-heading font-bold text-[13px] rounded cursor-default flex items-center gap-2 border border-border-hairline';
-                    }
-                }
-
-                // Show payment link callout if executed
-                const calloutEl = document.getElementById('dec-link-callout');
-                const shortUrlLink = document.getElementById('dec-short-url-link');
-                const payNowBtn = document.getElementById('dec-pay-now-btn');
-                if (calloutEl) {
-                    if (rec.short_url) {
-                        const targetUrl = resolvePaymentUrl(rec.short_url, rec.recovery_id, rec.payment_link_id, 1250);
-                        calloutEl.classList.remove('hidden');
-                        if (shortUrlLink) {
-                            shortUrlLink.innerText = rec.short_url;
-                            shortUrlLink.href = targetUrl;
-                            shortUrlLink.onclick = () => recordSimulatedPayment(rec.recovery_id, 1250);
-                        }
-                        if (payNowBtn) {
-                            payNowBtn.href = targetUrl;
-                            payNowBtn.onclick = () => recordSimulatedPayment(rec.recovery_id, 1250);
-                        }
-                    } else {
-                        calloutEl.classList.add('hidden');
-                    }
-                }
-            }
+            grid.innerHTML = checks.map((c, idx) => {
+                const ok = !!c.passed;
+                const icon = ok ? 'check' : 'block';
+                const color = ok ? 'text-accent-green' : 'text-accent-coral';
+                const label = String(c.check_name || '').replace(/_/g, ' ');
+                return `
+                    <div class="p-3.5 rounded bg-surface-elevated border border-border-hairline space-y-1">
+                        <span class="text-[10px] text-text-subtle uppercase block font-mono">${idx + 1}. ${escapeHtml(label)}</span>
+                        <span class="${color} font-bold block flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[14px]">${icon}</span> ${escapeHtml(c.reason_code || (ok ? 'PASSED' : 'FAILED'))}
+                        </span>
+                        <span class="text-[11px] text-text-muted">${escapeHtml(c.explanation || '')}</span>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderCampaign() {
-            const inc = AppState.activeIncident;
-            const activeIncidentId = inc ? inc.id : null;
-            const allRecoveries = AppState.recoveries || [];
-            const sim = getSimulatedState();
-            
-            const recoveries = activeIncidentId
-                ? allRecoveries.filter(r => r.incident_id === activeIncidentId)
-                : allRecoveries;
+            const totals = campaignTotals();
+            const recoveries = totals.recs;
+            const activeId = AppState.activeRecoveryId;
 
-            const baseTargetCount = inc ? (inc.current_failed_count || recoveries.length || 8) : (recoveries.length || 8);
-            const baseTargetVol = inc ? (inc.revenue_at_risk || 14000) : 14000;
+            setText('camp-target-count', AppState.activeIncident ? totals.targetCount : null);
+            setText('camp-table-count', AppState.activeIncident ? totals.targetCount : null);
+            setText('camp-target-volume', AppState.activeIncident ? formatINR(totals.targetVolume) : null);
+            setText('camp-recovered-volume', AppState.activeIncident ? formatINR(totals.recoveredVolume) : null);
 
-            const effectiveTargetCount = Math.max(0, baseTargetCount - (sim.count || 0));
-            const effectiveTargetVol = Math.max(0, baseTargetVol - (sim.amount || 0));
-
-            const elTargetCount = document.getElementById('camp-target-count');
-            if (elTargetCount) elTargetCount.innerText = effectiveTargetCount;
-
-            const elTargetVol = document.getElementById('camp-target-volume');
-            if (elTargetVol) elTargetVol.innerText = formatINR(effectiveTargetVol);
-
-            const backendRecoveredVol = recoveries.reduce((acc, curr) => acc + (curr.recovered_amount || 0), 0);
-            const totalRecoveredVol = backendRecoveredVol + (sim.amount || 0);
-            const elRecVol = document.getElementById('camp-recovered-volume');
-            if (elRecVol) elRecVol.innerText = formatINR(totalRecoveredVol);
-
-            // Update Lifecycle Steps
-            const isSimulated = (sim.count > 0);
-            const anyExecuted = recoveries.some(r => r.status === 'executed');
-            const allRecovered = (recoveries.length > 0 && recoveries.every(r => r.status === 'recovered')) || isSimulated;
+            const terminal = ['recovered', 'expired', 'failed'];
+            const allSettled = recoveries.length > 0 && recoveries.every(r => terminal.includes(r.status));
+            const anyRecovered = recoveries.some(r => r.status === 'recovered');
+            const anyExecuted = recoveries.some(r => r.status === 'executed' || r.status === 'recovered');
             const anyPending = recoveries.some(r => r.status === 'pending');
 
-            const s1 = document.getElementById('camp-step-1');
-            const s2 = document.getElementById('camp-step-2');
-            const s3 = document.getElementById('camp-step-3');
-            const s4 = document.getElementById('camp-step-4');
-            const s5 = document.getElementById('camp-step-5');
-            const s6 = document.getElementById('camp-step-6');
-
-            if (isSimulated || allRecovered) {
-                if (s1) s1.className = 'p-2.5 rounded bg-surface-elevated border border-accent-green/40 text-accent-green font-bold';
-                if (s2) s2.className = 'p-2.5 rounded bg-surface-elevated border border-accent-green/40 text-accent-green font-bold';
-                if (s3) s3.className = 'p-2.5 rounded bg-surface-elevated border border-accent-green/40 text-accent-green font-bold';
-                if (s4) s4.className = 'p-2.5 rounded bg-surface-elevated border border-accent-green/40 text-accent-green font-bold';
-                if (s5) s5.className = 'p-2.5 rounded bg-surface-elevated border border-accent-green/40 text-accent-green font-bold';
-                if (s6) s6.className = 'p-2.5 rounded bg-accent-green/20 border border-accent-green text-accent-green font-bold shadow-sm';
-            } else if (anyExecuted) {
-                if (s1) s1.className = 'p-2.5 rounded bg-surface-elevated border border-accent-green/40 text-accent-green font-bold';
-                if (s2) s2.className = 'p-2.5 rounded bg-surface-elevated border border-accent-indigo/40 text-accent-indigo font-bold';
-                if (s3) s3.className = 'p-2.5 rounded bg-surface-elevated border border-accent-cyan/40 text-accent-cyan font-bold';
-                if (s4) s4.className = 'p-2.5 rounded bg-surface-elevated border border-border-hairline text-white font-medium';
-                if (s5) s5.className = 'p-2.5 rounded bg-surface-elevated border border-border-hairline text-text-muted';
-                if (s6) s6.className = 'p-2.5 rounded bg-surface-elevated border border-border-hairline text-text-muted';
-            }
+            const steps = [1, 2, 3, 4, 5, 6].map(n => document.getElementById('camp-step-' + n));
+            const done = 'p-2.5 rounded bg-surface-elevated border border-accent-green/40 text-accent-green font-bold';
+            const current = 'p-2.5 rounded bg-surface-elevated border border-accent-cyan/40 text-accent-cyan font-bold';
+            const idle = 'p-2.5 rounded bg-surface-elevated border border-border-hairline text-text-muted';
+            // Steps: 1 detect, 2 decide, 3 dispatch, 4 customer pays, 5 webhook verified, 6 recovered
+            let reached = 2;
+            if (anyExecuted) reached = 4;
+            if (anyRecovered) reached = 5;
+            if (allSettled && anyRecovered) reached = 7;
+            steps.forEach((el, idx) => {
+                if (!el) return;
+                const stepNo = idx + 1;
+                el.className = stepNo < reached ? done : (stepNo === reached ? current : idle);
+            });
 
             const badgeEl = document.getElementById('camp-status-badge');
             if (badgeEl) {
-                if (isSimulated || allRecovered) {
-                    badgeEl.innerText = isSimulated ? 'RECOVERED' : 'RECOVERED';
-                    badgeEl.className = 'px-2 py-0.5 rounded bg-accent-green/20 text-accent-green font-bold border border-accent-green/30 text-[11px] inline-block mt-1';
-                } else if (anyExecuted) {
-                    badgeEl.innerText = 'DISPATCHED';
-                    badgeEl.className = 'px-2 py-0.5 rounded bg-accent-cyan/20 text-accent-cyan font-bold border border-accent-cyan/30 text-[11px] inline-block mt-1';
-                } else if (anyPending) {
-                    badgeEl.innerText = 'NEEDS APPROVAL';
-                    badgeEl.className = 'px-2 py-0.5 rounded bg-accent-amber/20 text-accent-amber font-bold border border-accent-amber/30 text-[11px] inline-block mt-1';
-                } else {
-                    badgeEl.innerText = 'READY';
-                    badgeEl.className = 'px-2 py-0.5 rounded bg-accent-indigo/20 text-accent-indigo font-bold border border-accent-indigo/30 text-[11px] inline-block mt-1';
-                }
+                const badge = (text, color) => {
+                    badgeEl.textContent = text;
+                    badgeEl.className = `px-2 py-0.5 rounded bg-accent-${color}/20 text-accent-${color} font-bold border border-accent-${color}/30 text-[11px] inline-block mt-1`;
+                };
+                if (recoveries.length === 0) badge(PLACEHOLDER, 'indigo');
+                else if (allSettled) badge(anyRecovered ? 'COMPLETED' : 'CLOSED · NOT RECOVERED', anyRecovered ? 'green' : 'coral');
+                else if (anyRecovered) badge(`RECOVERING (${totals.recoveredCount}/${totals.targetCount})`, 'green');
+                else if (anyExecuted) badge('DISPATCHED', 'cyan');
+                else if (anyPending) badge('NEEDS APPROVAL', 'amber');
+                else badge('READY', 'indigo');
             }
 
-            // Update Demo Pay Banner if any recovery attempt has short_url
-            const executedAttempt = recoveries.find(r => r.short_url && r.payment_link_id) || recoveries[0];
+            // Payment link banner: the selected attempt if it has a link, else the first open link.
+            const selected = recoveries.find(r => r.recovery_id === activeId && r.status === 'executed' && r.short_url);
+            const linkAttempt = selected || recoveries.find(r => r.status === 'executed' && r.short_url);
             const bannerEl = document.getElementById('demo-pay-banner');
-            const linkBtn = document.getElementById('demo-pay-link-btn');
-            const linkIdEl = document.getElementById('demo-pay-link-id');
-            const shortUrlEl = document.getElementById('demo-pay-short-url');
-
             if (bannerEl) {
-                if (executedAttempt && executedAttempt.short_url) {
-                    const targetUrl = resolvePaymentUrl(executedAttempt.short_url, executedAttempt.recovery_id, executedAttempt.payment_link_id, 1250);
+                const targetUrl = linkAttempt ? safePaymentUrl(linkAttempt.short_url) : null;
+                if (targetUrl) {
                     bannerEl.classList.remove('hidden');
-                    if (linkBtn) {
-                        linkBtn.href = targetUrl;
-                        linkBtn.onclick = () => recordSimulatedPayment(executedAttempt.recovery_id, 1250);
-                    }
-                    if (linkIdEl) linkIdEl.innerText = executedAttempt.payment_link_id || '—';
-                    if (shortUrlEl) {
-                        shortUrlEl.innerText = executedAttempt.short_url;
-                        shortUrlEl.href = targetUrl;
-                        shortUrlEl.onclick = () => recordSimulatedPayment(executedAttempt.recovery_id, 1250);
-                    }
+                    const linkBtn = document.getElementById('demo-pay-link-btn');
+                    if (linkBtn) linkBtn.href = targetUrl;
+                    setText('demo-pay-link-id', linkAttempt.payment_link_id);
+                    setText('demo-pay-short-url', linkAttempt.short_url);
                 } else {
                     bannerEl.classList.add('hidden');
                 }
             }
 
             const tbody = document.getElementById('attempts-table-body');
-            if (tbody) {
-                if (recoveries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-text-muted font-body">No recovery records found for active incident.</td></tr>';
-                } else {
-                    tbody.innerHTML = recoveries.map((r, idx) => {
-                        const isLiveTarget = (idx === 0);
-                        const isSimRecovered = sim.recoveredIds.includes(r.recovery_id) || (isLiveTarget && isSimulated);
-                        
-                        let currentStatus = isSimRecovered ? 'recovered' : r.status;
-                        let statusColor = 'bg-surface-elevated text-text-muted border-border-hairline';
-                        if (currentStatus === 'recovered') statusColor = 'bg-accent-green/10 text-accent-green border-accent-green/30';
-                        else if (currentStatus === 'executed') statusColor = 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/30';
-                        else if (currentStatus === 'approved') statusColor = 'bg-accent-indigo/10 text-accent-indigo border-accent-indigo/30';
-                        else if (currentStatus === 'pending') statusColor = 'bg-accent-amber/10 text-accent-amber border-accent-amber/30';
-
-                        const displayRecovered = isSimRecovered ? formatINR(1250) : formatINR(r.recovered_amount);
-                        const targetUrl = resolvePaymentUrl(r.short_url, r.recovery_id, r.payment_link_id, 1250);
-
-                        return `
-                            <tr class="hover:bg-surface-card transition-colors ${isLiveTarget ? 'bg-accent-indigo/5' : ''}">
-                                <td class="py-3.5 px-4 text-white font-bold">
-                                    ${r.recovery_id}
-                                    ${isLiveTarget ? '<span class="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-accent-indigo/20 text-accent-cyan border border-accent-cyan/30 font-mono">Live Verification Target</span>' : ''}
-                                </td>
-                                <td class="py-3.5 px-4 text-accent-indigo font-medium uppercase">${r.selected_action}</td>
-                                <td class="py-3.5 px-4 text-text-muted">${formatINR(r.incentive_amount)}</td>
-                                <td class="py-3.5 px-4">
-                                    <span class="px-2 py-0.5 rounded text-[11px] font-bold border ${statusColor}">${currentStatus}</span>
-                                </td>
-                                <td class="py-3.5 px-4 text-white font-bold">${displayRecovered}</td>
-                                <td class="py-3.5 px-4 text-accent-cyan font-mono">${r.payment_link_id || '—'}</td>
-                                <td class="py-3.5 px-4 text-right font-mono">
-                                    ${r.short_url ? `<a href="${targetUrl}" target="_blank" onclick="recordSimulatedPayment('${r.recovery_id}', 1250)" class="px-2.5 py-1 rounded bg-accent-cyan text-black hover:bg-opacity-90 font-bold text-[11px] inline-flex items-center gap-1">Pay Test Mode &rarr;</a>` : '—'}
-                                </td>
-                            </tr>
-                        `;
-                    }).join('');
-                }
+            if (!tbody) return;
+            if (recoveries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-text-muted font-body">No recovery records found for active incident.</td></tr>';
+                return;
             }
+
+            const statusColors = {
+                recovered: 'bg-accent-green/10 text-accent-green border-accent-green/30',
+                executed: 'bg-accent-cyan/10 text-accent-cyan border-accent-cyan/30',
+                approved: 'bg-accent-indigo/10 text-accent-indigo border-accent-indigo/30',
+                pending: 'bg-accent-amber/10 text-accent-amber border-accent-amber/30',
+            };
+
+            tbody.innerHTML = recoveries.map(r => {
+                const isSelected = r.recovery_id === activeId;
+                const statusColor = statusColors[r.status] || 'bg-surface-elevated text-text-muted border-border-hairline';
+                const targetUrl = r.status === 'executed' ? safePaymentUrl(r.short_url) : null;
+                const payCell = targetUrl
+                    ? `<a href="${escapeHtml(targetUrl)}" target="_blank" rel="noopener" class="px-2.5 py-1 rounded bg-accent-cyan text-black hover:bg-opacity-90 font-bold text-[11px] inline-flex items-center gap-1">Pay Test Mode &rarr;</a>`
+                    : PLACEHOLDER;
+                return `
+                    <tr class="hover:bg-surface-card transition-colors cursor-pointer ${isSelected ? 'bg-accent-indigo/5' : ''}" data-recovery-id="${escapeHtml(r.recovery_id)}">
+                        <td class="py-3.5 px-4 text-white font-bold">
+                            ${escapeHtml(r.recovery_id)}
+                            ${isSelected ? '<span class="ml-2 px-1.5 py-0.5 rounded text-[10px] bg-accent-indigo/20 text-accent-cyan border border-accent-cyan/30 font-mono">Selected</span>' : ''}
+                        </td>
+                        <td class="py-3.5 px-4 text-accent-indigo font-medium uppercase">${escapeHtml(r.selected_action)}</td>
+                        <td class="py-3.5 px-4 text-text-muted">${escapeHtml(formatINR(r.incentive_amount))}</td>
+                        <td class="py-3.5 px-4">
+                            <span class="px-2 py-0.5 rounded text-[11px] font-bold border ${statusColor}">${escapeHtml(r.status)}</span>
+                        </td>
+                        <td class="py-3.5 px-4 text-white font-bold">${escapeHtml(formatINR(r.recovered_amount))}</td>
+                        <td class="py-3.5 px-4 text-accent-cyan font-mono">${escapeHtml(r.payment_link_id || PLACEHOLDER)}</td>
+                        <td class="py-3.5 px-4 text-right font-mono">${payCell}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Row click selects the attempt (no inline handlers built from API data).
+            tbody.querySelectorAll('tr[data-recovery-id]').forEach(row => {
+                row.addEventListener('click', (ev) => {
+                    if (ev.target.closest('a')) return;
+                    selectRecovery(row.getAttribute('data-recovery-id'));
+                });
+            });
         }
 
         function renderAuditTrail() {
-            const baseEvents = AppState.auditEvents || [];
-            const sim = getSimulatedState();
-            
-            // If simulated recovery took place, add a trace event
-            let events = [...baseEvents];
-            if (sim.count > 0) {
-                events.unshift({
-                    event_type: 'PAYMENT_CAPTURED_WEBHOOK',
-                    actor_type: 'RAZORPAY_GATEWAY',
-                    previous_state: 'executed',
-                    new_state: 'recovered',
-                    explanation: 'Razorpay webhook payment.captured received. Verified recovered amount ₹1,250.',
-                    reason_code: 'PAYMENT_LINK_PAID',
-                    created_at: new Date().toISOString()
-                });
-            }
-
-            const countEl = document.getElementById('audit-events-count');
-            if (countEl) countEl.innerText = `Events: ${events.length}`;
+            const events = AppState.auditEvents || [];
+            setText('audit-events-count', `Events: ${events.length}`);
 
             const listEl = document.getElementById('audit-events-list');
-            if (listEl) {
-                if (events.length === 0) {
-                    listEl.innerHTML = '<div class="text-text-muted text-center py-6 font-body">No audit log records found for active recovery attempt.</div>';
-                } else {
-                    listEl.innerHTML = events.map(ev => `
-                        <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-2">
-                            <div class="flex justify-between items-center border-b border-border-hairline pb-2">
-                                <span class="font-bold text-accent-cyan">${ev.event_type}</span>
-                                <span class="text-text-subtle text-[11px]">${new Date(ev.created_at).toLocaleTimeString()}</span>
-                            </div>
-                            <div class="text-white text-[13px] font-body">${ev.explanation || 'State transition recorded'}</div>
-                            <div class="flex flex-wrap gap-4 text-[11px] text-text-muted pt-1">
-                                <span>Actor: <span class="text-white font-mono">${ev.actor_type}</span></span>
-                                <span>Transition: <span class="text-text-subtle font-mono">${ev.previous_state || 'none'}</span> &rarr; <span class="text-accent-green font-mono">${ev.new_state || 'none'}</span></span>
-                                ${ev.reason_code ? `<span>Reason: <span class="text-white font-mono">${ev.reason_code}</span></span>` : ''}
-                            </div>
-                        </div>
-                    `).join('');
-                }
+            if (!listEl) return;
+            if (events.length === 0) {
+                listEl.innerHTML = '<div class="text-text-muted text-center py-6 font-body">No audit log records found for the selected recovery attempt.</div>';
+                return;
             }
+            listEl.innerHTML = events.map(ev => `
+                <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-2">
+                    <div class="flex justify-between items-center border-b border-border-hairline pb-2">
+                        <span class="font-bold text-accent-cyan">${escapeHtml(ev.event_type)}</span>
+                        <span class="text-text-subtle text-[11px]">${escapeHtml(new Date(ev.created_at).toLocaleString())}</span>
+                    </div>
+                    <div class="text-white text-[13px] font-body">${escapeHtml(ev.explanation || 'State transition recorded')}</div>
+                    <div class="flex flex-wrap gap-4 text-[11px] text-text-muted pt-1">
+                        <span>Actor: <span class="text-white font-mono">${escapeHtml(ev.actor_type)}${ev.actor_id ? ' / ' + escapeHtml(ev.actor_id) : ''}</span></span>
+                        <span>Transition: <span class="text-text-subtle font-mono">${escapeHtml(ev.previous_state || 'none')}</span> &rarr; <span class="text-accent-green font-mono">${escapeHtml(ev.new_state || 'none')}</span></span>
+                        ${ev.reason_code ? `<span>Reason: <span class="text-white font-mono">${escapeHtml(ev.reason_code)}</span></span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function describeError(err) {
+            const detail = err && err.data && err.data.detail;
+            if (detail && typeof detail === 'object') {
+                return detail.explanation || detail.message || JSON.stringify(detail);
+            }
+            return (err && err.message) || 'Unknown error';
         }
 
         // --- Controller Actions ---
 
         async function handleDecisionPrimaryAction() {
-            let rec = AppState.activeRecovery;
-            const allRecoveries = AppState.recoveries || [];
-            const inc = AppState.activeIncident;
-
-            if (!rec && allRecoveries.length > 0) {
-                rec = (inc ? allRecoveries.find(r => r.incident_id === inc.id && (r.status === 'pending' || r.status === 'approved')) : null)
-                    || allRecoveries.find(r => r.status === 'pending' || r.status === 'approved')
-                    || (inc ? allRecoveries.find(r => r.incident_id === inc.id) : null)
-                    || allRecoveries[0];
-                AppState.activeRecovery = rec;
-            }
-
+            const rec = getActiveRecovery();
             if (!rec) {
-                await refreshRecoveries();
-                rec = AppState.activeRecovery;
-            }
-
-            if (!rec) {
-                alert('No active recovery plan selected.');
+                alert('No recovery plan selected.');
                 return;
             }
 
             const btnAction = document.getElementById('btn-decision-action');
             const btnText = document.getElementById('btn-decision-action-text');
+            const busy = (label) => {
+                if (btnText) btnText.innerHTML = `<span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> ${escapeHtml(label)}`;
+                if (btnAction) btnAction.disabled = true;
+            };
 
             try {
                 if (rec.status === 'pending') {
-                    if (btnText) btnText.innerHTML = '<span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> Approving...';
-                    if (btnAction) btnAction.disabled = true;
-                    
-                    const updated = await RecoverAPI.approveRecovery(rec.recovery_id);
-                    AppState.activeRecovery = updated;
-                    await refreshRecoveries();
-                } else if (rec.status === 'approved') {
-                    if (btnText) btnText.innerHTML = '<span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> Executing...';
-                    if (btnAction) btnAction.disabled = true;
-                    
-                    const updated = await RecoverAPI.executeRecovery(rec.recovery_id);
-                    AppState.activeRecovery = updated;
-                    await refreshRecoveries();
-                } else {
-                    await refreshRecoveries();
+                    const what = rec.selected_action === 'ops_review'
+                        ? `Acknowledge ops review ${rec.recovery_id}?`
+                        : `Approve ${rec.selected_action} recovery ${rec.recovery_id} for ${formatINR(rec.charge_amount)}?`;
+                    if (!confirm(what)) return;
+                    busy('Approving...');
+                    await RecoverAPI.approveRecovery(rec.recovery_id);
+                } else if ((rec.status === 'approved' || rec.status === 'executing') && rec.selected_action !== 'ops_review') {
+                    if (!confirm(`Send a payment link for ${formatINR(rec.charge_amount)} to the customer for ${rec.recovery_id}?`)) return;
+                    busy('Executing...');
+                    await RecoverAPI.executeRecovery(rec.recovery_id);
                 }
             } catch (err) {
-                alert(`Operation failed: ${err.message}`);
+                alert(`Operation failed: ${describeError(err)}`);
+            } finally {
+                // Keep the same attempt selected so its link and audit trail stay visible.
+                AppState.activeRecoveryId = rec.recovery_id;
                 await refreshRecoveries();
             }
         }
 
         async function executeActiveRecovery() {
             const inc = AppState.activeIncident;
-            const activeIncidentId = inc ? inc.id : null;
-            let allRecoveries = AppState.recoveries || [];
-
-            if (allRecoveries.length === 0) {
-                await refreshRecoveries();
-                allRecoveries = AppState.recoveries || [];
+            if (!inc) {
+                alert('No active incident.');
+                return;
             }
+            if (!AppState.recoveries.length) await refreshRecoveries();
 
-            // 1. Pending or approved for current active incident
-            let targetAttempts = activeIncidentId
-                ? allRecoveries.filter(r => r.incident_id === activeIncidentId && (r.status === 'pending' || r.status === 'approved'))
-                : [];
+            // Only this incident's campaign, and only link-executable actions.
+            const scoped = incidentRecoveries().filter(r => r.selected_action !== 'ops_review');
+            const toApprove = scoped.filter(r => r.status === 'pending');
+            const toExecute = scoped.filter(r => r.status === 'pending' || r.status === 'approved' || r.status === 'executing');
 
-            // 2. Any pending or approved attempts in system
-            if (targetAttempts.length === 0) {
-                targetAttempts = allRecoveries.filter(r => r.status === 'pending' || r.status === 'approved');
-            }
-
-            // 3. Any attempts for current active incident
-            if (targetAttempts.length === 0 && activeIncidentId) {
-                targetAttempts = allRecoveries.filter(r => r.incident_id === activeIncidentId);
-            }
-
-            // 4. All recoveries fallback
-            if (targetAttempts.length === 0) {
-                targetAttempts = allRecoveries;
-            }
-
-            if (targetAttempts.length === 0) {
-                alert('No recovery record available to execute.');
+            if (toExecute.length === 0) {
+                alert('Nothing to dispatch: every attempt in this campaign is already dispatched or settled.');
                 return;
             }
 
+            const total = toExecute.reduce((acc, r) => acc + (r.charge_amount || 0), 0);
+            let message = `Dispatch ${toExecute.length} payment link(s) totalling ${formatINR(total)} for incident ${String(inc.id).substring(0, 8)}?`;
+            if (toApprove.length) {
+                message += `\n\nThis also approves ${toApprove.length} attempt(s) that are awaiting operator approval.`;
+            }
+            if (!confirm(message)) return;
+
             const btn = document.getElementById('btn-execute-campaign');
             const btnText = document.getElementById('btn-execute-campaign-text');
+            if (btnText) btnText.innerHTML = '<span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> Dispatching...';
+            if (btn) btn.disabled = true;
 
-            try {
-                if (btnText) btnText.innerHTML = '<span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span> Dispatching...';
-                if (btn) btn.disabled = true;
-
-                for (const att of targetAttempts) {
+            const failures = [];
+            let dispatched = 0;
+            for (const att of toExecute) {
+                try {
                     if (att.status === 'pending') {
                         await RecoverAPI.approveRecovery(att.recovery_id);
-                        att.status = 'approved';
                     }
-                    if (att.status === 'approved') {
-                        const executed = await RecoverAPI.executeRecovery(att.recovery_id);
-                        Object.assign(att, executed);
-                    }
+                    await RecoverAPI.executeRecovery(att.recovery_id);
+                    dispatched += 1;
+                } catch (err) {
+                    // Keep going: one gateway/guardrail failure must not strand the rest.
+                    failures.push(`${att.recovery_id}: ${describeError(err)}`);
                 }
+            }
 
-                await refreshRecoveries();
-                if (btnText) btnText.innerText = 'Links Dispatched';
-                if (btn) btn.disabled = false;
-            } catch (err) {
-                alert(`Execution error: ${err.message}`);
-                if (btnText) btnText.innerText = 'Dispatch Payment Links';
-                if (btn) btn.disabled = false;
-                await refreshRecoveries();
+            await refreshRecoveries();
+            if (btnText) btnText.textContent = 'Dispatch Payment Links';
+            if (btn) btn.disabled = false;
+
+            if (failures.length) {
+                alert(`Dispatched ${dispatched} of ${toExecute.length} link(s).\n\nFailed:\n${failures.join('\n')}`);
             }
         }
 
         async function refreshRecoveries() {
             try {
-                const recoveries = await RecoverAPI.getRecoveries();
-                AppState.recoveries = recoveries;
-                if (recoveries.length > 0) {
-                    const inc = AppState.activeIncident;
-                    const matched = inc 
-                        ? (recoveries.find(r => r.incident_id === inc.id && (r.status === 'pending' || r.status === 'approved')) ||
-                           recoveries.find(r => r.incident_id === inc.id) ||
-                           recoveries.find(r => r.status === 'pending' || r.status === 'approved') ||
-                           recoveries[0])
-                        : (recoveries.find(r => r.status === 'pending' || r.status === 'approved') || recoveries[0]);
-                    AppState.activeRecovery = matched;
+                AppState.recoveries = await RecoverAPI.getRecoveries();
+                if (AppState.activeIncident) {
+                    // Keep incident status/outcomes current as attempts settle.
+                    AppState.activeIncident = await RecoverAPI.getIncidentDetail(AppState.activeIncident.id);
                 }
-                renderCampaign();
-                renderDecisionRoom();
-                renderCommandCenter();
-                renderIncidentDetail();
+                renderAll();
             } catch (e) {
                 console.warn('Could not refresh recoveries:', e);
             }
         }
 
         async function refreshAuditTrail() {
-            const rec = AppState.activeRecovery || (AppState.recoveries && AppState.recoveries[0]);
-            if (!rec) return;
-
+            const rec = getActiveRecovery();
+            if (!rec) {
+                AppState.auditEvents = [];
+                renderAuditTrail();
+                return;
+            }
             try {
-                const events = await RecoverAPI.getRecoveryAudit(rec.recovery_id);
-                AppState.auditEvents = events;
+                AppState.auditEvents = await RecoverAPI.getRecoveryAudit(rec.recovery_id);
                 renderAuditTrail();
             } catch (e) {
                 console.warn('Could not load audit events:', e);
             }
         }
 
-        // --- Initialization ---
-
-        async function initApp() {
+        function setConnectionStatus(ok, text) {
             const statusText = document.getElementById('header-status-text');
-            try {
-                if (statusText) statusText.innerText = 'FETCHING TELEMETRY...';
-
-                // 1. Fetch Dashboard Summary
-                const summary = await RecoverAPI.getDashboardSummary();
-                AppState.summary = summary;
-
-                // 2. Fetch Incidents
-                const incidents = await RecoverAPI.getIncidents();
-                AppState.incidents = incidents;
-
-                // 3. Find active incident (prefer HDFC UPI degradation cohort)
-                if (incidents.length > 0) {
-                    const targetIncident = incidents.find(i => (i.bank || '').toUpperCase() === 'HDFC') || incidents[0];
-                    const detail = await RecoverAPI.getIncidentDetail(targetIncident.id);
-                    AppState.activeIncident = detail;
-                }
-
-                // 4. Fetch Recoveries
-                const recoveries = await RecoverAPI.getRecoveries();
-                AppState.recoveries = recoveries;
-                if (recoveries.length > 0) {
-                    const inc = AppState.activeIncident;
-                    const matched = inc 
-                        ? (recoveries.find(r => r.incident_id === inc.id && (r.status === 'pending' || r.status === 'approved')) ||
-                           recoveries.find(r => r.incident_id === inc.id) ||
-                           recoveries.find(r => r.status === 'pending' || r.status === 'approved') ||
-                           recoveries[0])
-                        : (recoveries.find(r => r.status === 'pending' || r.status === 'approved') || recoveries[0]);
-                    AppState.activeRecovery = matched;
-                }
-
-                // Render views
-                renderCommandCenter();
-                renderIncidentDetail();
-                renderDecisionRoom();
-                renderCampaign();
-
-                if (statusText) statusText.innerText = 'LIVE CONTROL PLANE';
-            } catch (err) {
-                console.error('Initialization error:', err);
-                if (statusText) {
-                    statusText.innerText = 'API DISCONNECTED';
-                    statusText.parentElement.className = 'flex items-center gap-2 px-3 py-1.5 rounded bg-surface-card border border-accent-coral/30 text-[12px] font-mono text-accent-coral';
-                }
+            if (!statusText) return;
+            statusText.textContent = text;
+            if (!ok && statusText.parentElement) {
+                statusText.parentElement.className = 'flex items-center gap-2 px-3 py-1.5 rounded bg-surface-card border border-accent-coral/30 text-[12px] font-mono text-accent-coral';
             }
         }
 
-        // Run on load
+        // --- Initialization ---
+
+        async function initApp() {
+            clearLiveFields();
+            setConnectionStatus(true, 'FETCHING TELEMETRY...');
+
+            // Independent requests: one failure must not hide the others.
+            const [summaryRes, incidentsRes, recoveriesRes] = await Promise.allSettled([
+                RecoverAPI.getDashboardSummary(),
+                RecoverAPI.getIncidents(),
+                RecoverAPI.getRecoveries(),
+            ]);
+
+            if (summaryRes.status === 'fulfilled') AppState.summary = summaryRes.value;
+            if (recoveriesRes.status === 'fulfilled') AppState.recoveries = recoveriesRes.value;
+            if (incidentsRes.status === 'fulfilled') {
+                AppState.incidents = incidentsRes.value;
+                const active = AppState.incidents.filter(i => i.status !== 'resolved');
+                const pool = active.length ? active : AppState.incidents;
+                // Most recent unresolved incident first.
+                pool.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+                if (pool.length) {
+                    try {
+                        AppState.activeIncident = await RecoverAPI.getIncidentDetail(pool[0].id);
+                    } catch (e) {
+                        console.warn('Could not load incident detail:', e);
+                    }
+                }
+            }
+
+            const failed = [summaryRes, incidentsRes, recoveriesRes].filter(r => r.status === 'rejected');
+            AppState.apiAvailable = failed.length < 3;
+            setText('header-merchant-name', String(RecoverAPI.getMerchantId()).substring(0, 8));
+
+            renderAll();
+
+            if (failed.length === 0) {
+                setConnectionStatus(true, 'LIVE CONTROL PLANE');
+            } else if (failed.length === 3) {
+                console.error('API unavailable:', failed.map(f => f.reason));
+                setConnectionStatus(false, 'API DISCONNECTED');
+            } else {
+                setConnectionStatus(false, 'PARTIAL DATA');
+            }
+        }
+
+        // Customers pay in another tab; pick up verified settlements on return.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && AppState.apiAvailable) {
+                refreshRecoveries();
+            }
+        });
+
         window.addEventListener('DOMContentLoaded', initApp);
     </script>
 </body>
