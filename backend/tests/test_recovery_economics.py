@@ -166,8 +166,10 @@ def test_incentive_cost_calculation(db_session, create_merchant, create_incident
 
     c_inc = candidates_dict["incentive"]
     assert c_inc.is_eligible is True
-    assert c_inc.action_cost == 500  # Default incentive cost
-    assert c_inc.expected_net_recovery_value == c_inc.expected_recovery_amount - 500
+    assert c_inc.action_cost == 500  # Default per-attempt incentive cost
+    # Incentive is paid once per targeted payment (incident has 10 failed payments)
+    assert c_inc.total_action_cost == 500 * incident.current_failed_count
+    assert c_inc.expected_net_recovery_value == c_inc.expected_recovery_amount - c_inc.total_action_cost
 
 
 def test_best_action_selection(db_session, create_merchant, create_incident_and_diagnosis):
@@ -187,13 +189,13 @@ def test_best_action_selection(db_session, create_merchant, create_incident_and_
     # With default rates:
     # retry: rate=0.30, cost=0 -> net value=3000
     # gp: rate=0.20, cost=0 -> net value=2000
-    # incentive: rate=0.25, cost=500 -> net value=2000
+    # incentive: rate=0.25, cost=500 x 10 payments -> net value=-2500
     # Expected: retry has highest net value (3000) and is selected
     attempt = decide_recovery_action(db_session, incident, diagnosis, policy)
     assert attempt.selected_action == "retry"
 
     # Now let's override with custom rates where incentive has highest net value:
-    # Custom rates: gp: 0.10 -> net=1000, retry: 0.10 -> net=1000, incentive: 0.80 -> net = 8000 - 500 = 7500
+    # Custom rates: gp: 0.10 -> net=1000, retry: 0.10 -> net=1000, incentive: 0.80 -> net = 8000 - 5000 = 3000
     custom_rates = {
         "retry": 0.10,
         "grace_period": 0.10,
@@ -269,7 +271,8 @@ def test_zero_revenue_at_risk(db_session, create_merchant, create_incident_and_d
     for action, c in candidates_dict.items():
         assert c.expected_recovery_amount == 0
         if action == "incentive":
-            assert c.expected_net_recovery_value == -500  # expected = 0, cost = 500
+            # expected = 0, cost = 500 per targeted payment
+            assert c.expected_net_recovery_value == -c.total_action_cost
         else:
             assert c.expected_net_recovery_value == 0
 

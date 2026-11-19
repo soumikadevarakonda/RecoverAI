@@ -1,11 +1,19 @@
+from datetime import datetime, timedelta, timezone
+import logging
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 from app.core.config import settings
+from app.core.security import TokenSecretNotConfiguredError, verify_merchant_token
 from app.db.dependencies import get_db
-from app.domains.recovery.service import execute_recovery_attempt
+from app.domains.recovery.guardrails import GuardrailViolationError
+from app.domains.recovery.service import (
+    execute_recovery_attempt,
+    expire_stale_attempts,
+    orchestrate_recovery,
+)
 from app.models.merchant import Merchant
 from app.models.incident import Incident
 from app.models.payment import Payment
@@ -26,7 +34,14 @@ from app.schemas.api import (
     RecoveryAuditEventResponse,
     DiagnosisSummarySchema,
     RecoveryAttemptSummarySchema,
+    DetectionRunResponse,
+    DetectedIncidentSummary,
 )
+
+logger = logging.getLogger(__name__)
+
+# Incident states that still represent unrecovered revenue.
+ACTIVE_INCIDENT_STATUSES = ("detected", "diagnosed", "recovering")
 
 router = APIRouter(
     prefix="/merchant",
@@ -41,16 +56,22 @@ def _ensure_trial_data(db: Session, merchant_id: UUID) -> None:
     """
     Ensures trial scenario data exists for the default trial merchant in development mode.
     """
-    if settings.environment != "production" and merchant_id == DEFAULT_TRIAL_MERCHANT_ID:
+    if not settings.is_production and merchant_id == DEFAULT_TRIAL_MERCHANT_ID:
         inc_count = db.scalar(select(func.count(Incident.id)).where(Incident.merchant_id == merchant_id))
-        if not inc_count:
+        # The seeder deletes the merchant's existing rows before re-seeding, so it
+        # must never run once real payments have been ingested for this merchant
+        # (DEV_MERCHANT_ID defaults to the trial merchant in the README setup).
+        payment_count = db.scalar(select(func.count(Payment.id)).where(Payment.merchant_id == merchant_id))
+        if not inc_count and not payment_count:
             try:
                 from scripts.seed_trial_data import seed_trial_scenario
                 from app.domains.recovery.trial_evaluation import evaluate_trial_scenario
                 seed_trial_scenario(db, merchant_id=merchant_id)
                 evaluate_trial_scenario(db, merchant_id=merchant_id)
             except Exception:
-                pass
+                # Leave the session usable for the request that triggered seeding.
+                db.rollback()
+                logger.exception("Automatic trial data seeding failed for merchant %s", merchant_id)
 
 
 def get_merchant_id(
@@ -71,10 +92,18 @@ def get_merchant_id(
             )
         token = authorization.split(" ", 1)[1].strip()
         try:
-            merchant_uuid = UUID(token)
-            merchant = db.scalar(select(Merchant).where(Merchant.id == merchant_uuid))
-        except (ValueError, TypeError):
-            merchant = None
+            merchant_uuid = verify_merchant_token(token)
+        except TokenSecretNotConfiguredError:
+            logger.error("AUTH_TOKEN_SECRET is not configured; rejecting production request.")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Server authentication is not configured.",
+            )
+        merchant = (
+            db.scalar(select(Merchant).where(Merchant.id == merchant_uuid))
+            if merchant_uuid is not None
+            else None
+        )
 
         if not merchant:
             raise HTTPException(
@@ -97,19 +126,35 @@ def get_dashboard_summary(
     db: Session = Depends(get_db),
 ):
     _ensure_trial_data(db, merchant_id)
+    expire_stale_attempts(db, merchant_id)
+
     active_incidents = db.scalar(
         select(func.count(Incident.id)).where(
             Incident.merchant_id == merchant_id,
-            Incident.status.in_(["detected", "diagnosed"]),
+            Incident.status.in_(ACTIVE_INCIDENT_STATUSES),
         )
     ) or 0
 
-    revenue_at_risk = db.scalar(
+    active_incident_risk = db.scalar(
         select(func.sum(Incident.revenue_at_risk)).where(
             Incident.merchant_id == merchant_id,
-            Incident.status.in_(["detected", "diagnosed"]),
+            Incident.status.in_(ACTIVE_INCIDENT_STATUSES),
         )
     ) or 0
+
+    # Revenue already verified as recovered on still-active incidents is no
+    # longer at risk.
+    recovered_on_active = db.scalar(
+        select(func.sum(RecoveryAttempt.recovered_amount))
+        .join(Incident, RecoveryAttempt.incident_id == Incident.id)
+        .where(
+            RecoveryAttempt.merchant_id == merchant_id,
+            RecoveryAttempt.status == "recovered",
+            Incident.status.in_(ACTIVE_INCIDENT_STATUSES),
+        )
+    ) or 0
+
+    revenue_at_risk = max(0, int(active_incident_risk) - int(recovered_on_active))
 
     recovered_revenue = db.scalar(
         select(func.sum(RecoveryAttempt.recovered_amount)).where(
@@ -262,7 +307,15 @@ def get_incident_detail(
 
 
 def _to_recovery_detail_response(attempt: RecoveryAttempt) -> RecoveryAttemptDetailResponse:
+    payment_amount = attempt.payment.amount if attempt.payment is not None else None
+    charge_amount = (
+        max(0, payment_amount - (attempt.incentive_amount or 0))
+        if payment_amount is not None
+        else None
+    )
     return RecoveryAttemptDetailResponse(
+        payment_amount=payment_amount,
+        charge_amount=charge_amount,
         id=attempt.id,
         recovery_id=attempt.recovery_id,
         merchant_id=attempt.merchant_id,
@@ -288,8 +341,11 @@ def list_recoveries(
     db: Session = Depends(get_db),
 ):
     _ensure_trial_data(db, merchant_id)
+    expire_stale_attempts(db, merchant_id)
     attempts = db.scalars(
-        select(RecoveryAttempt).where(RecoveryAttempt.merchant_id == merchant_id)
+        select(RecoveryAttempt)
+        .where(RecoveryAttempt.merchant_id == merchant_id)
+        .order_by(RecoveryAttempt.created_at.asc(), RecoveryAttempt.recovery_id.asc())
     ).all()
 
     return [_to_recovery_detail_response(att) for att in attempts]
@@ -428,8 +484,16 @@ def execute_recovery(
     if not attempt:
         raise HTTPException(status_code=404, detail="Recovery attempt not found")
 
-    # Execute only an approved RecoveryAttempt
-    if attempt.status != "approved":
+    # 'ops_review' means a human investigates the cohort; it is never executed
+    # by sending the customer a payment link.
+    if attempt.selected_action == "ops_review":
+        raise HTTPException(
+            status_code=400,
+            detail="ops_review attempts are resolved by operator review and cannot be executed as payment links.",
+        )
+
+    # Execute approved attempts, or resume one interrupted mid-execution.
+    if attempt.status not in ("approved", "executing"):
         raise HTTPException(
             status_code=400,
             detail=f"Cannot execute recovery attempt with status: {attempt.status}",
@@ -437,10 +501,21 @@ def execute_recovery(
 
     try:
         attempt = execute_recovery_attempt(db, attempt)
-    except Exception as exc:
+    except GuardrailViolationError as exc:
         raise HTTPException(
-            status_code=500,
-            detail=f"Recovery execution failed: {exc}",
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": "Execution blocked by guardrails.",
+                "reason_code": exc.result.reason_code,
+                "explanation": exc.result.explanation,
+            },
+        )
+    except Exception:
+        db.rollback()
+        logger.exception("Recovery execution failed for %s", recovery_id)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Recovery execution failed while contacting the payment gateway. The attempt can be retried.",
         )
 
     return _to_recovery_detail_response(attempt)
@@ -511,4 +586,77 @@ def get_campaign_audit(
         db=db,
         merchant_id=merchant_id,
         campaign_id=campaign.id,
+    )
+
+
+@router.post("/detection/run", response_model=DetectionRunResponse)
+def run_detection_cycle(
+    window_minutes: int = Query(30, ge=5, le=24 * 60),
+    baseline_minutes: int = Query(60, ge=5, le=7 * 24 * 60),
+    window_end: datetime | None = None,
+    merchant_id: UUID = Depends(get_merchant_id),
+    db: Session = Depends(get_db),
+):
+    """
+    Runs one closed-loop cycle over live payment telemetry:
+    cohort detection -> diagnosis -> economics/AI/guardrails -> campaign.
+    Campaigns the guardrails approve for automatic execution are dispatched.
+
+    Call this on a schedule (cron / worker) or from the control plane.
+    """
+    from app.domains.cohorts.detector import detect_cohort_degradations
+
+    end = window_end or datetime.now(timezone.utc)
+    start = end - timedelta(minutes=window_minutes)
+    baseline_end = start
+    baseline_start = baseline_end - timedelta(minutes=baseline_minutes)
+
+    expire_stale_attempts(db, merchant_id, now=end)
+
+    incidents = detect_cohort_degradations(
+        db=db,
+        merchant_id=merchant_id,
+        window_start=start,
+        window_end=end,
+        baseline_start=baseline_start,
+        baseline_end=baseline_end,
+    )
+
+    summaries: list[DetectedIncidentSummary] = []
+    for incident in incidents:
+        attempt = None
+        error = None
+        try:
+            attempt = orchestrate_recovery(db, incident)
+        except Exception as exc:
+            db.rollback()
+            logger.exception("Orchestration failed for incident %s", incident.id)
+            error = exc.__class__.__name__
+        db.refresh(incident)
+        campaign = db.scalar(
+            select(RecoveryCampaign).where(RecoveryCampaign.incident_id == incident.id)
+        )
+        summaries.append(
+            DetectedIncidentSummary(
+                incident_id=incident.id,
+                method=incident.method,
+                bank=incident.bank,
+                error_code=incident.error_code,
+                error_step=incident.error_step,
+                status=incident.status,
+                revenue_at_risk=incident.revenue_at_risk,
+                campaign_id=campaign.campaign_id if campaign else None,
+                campaign_status=campaign.status if campaign else None,
+                selected_action=attempt.selected_action if attempt else None,
+                error=error,
+            )
+        )
+
+    return DetectionRunResponse(
+        window_start=start,
+        window_end=end,
+        baseline_start=baseline_start,
+        baseline_end=baseline_end,
+        incidents_detected=len(incidents),
+        incidents=summaries,
     )

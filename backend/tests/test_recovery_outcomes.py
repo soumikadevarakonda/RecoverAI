@@ -108,7 +108,7 @@ def test_all_attempts_recovered(db_session, create_merchant, create_incident, cr
     assert perf.total_attempts == 2
     assert perf.recovered_attempts == 2
     assert perf.observed_recovery_rate == 1.0
-    assert perf.total_revenue_at_risk == 20000
+    assert perf.total_revenue_at_risk == 10000  # counted once per incident, not per attempt
     assert perf.total_recovered_amount == 19500
 
 
@@ -122,7 +122,7 @@ def test_mixed_recovered_failed_attempts(db_session, create_merchant, create_inc
     assert perf.total_attempts == 2
     assert perf.recovered_attempts == 1
     assert perf.observed_recovery_rate == 0.5
-    assert perf.total_revenue_at_risk == 20000
+    assert perf.total_revenue_at_risk == 10000  # counted once per incident, not per attempt
     assert perf.total_recovered_amount == 10000
 
 
@@ -136,7 +136,7 @@ def test_failed_expired_attempts_only(db_session, create_merchant, create_incide
     assert perf.total_attempts == 2
     assert perf.recovered_attempts == 0
     assert perf.observed_recovery_rate == 0.0
-    assert perf.total_revenue_at_risk == 20000
+    assert perf.total_revenue_at_risk == 10000  # counted once per incident, not per attempt
     assert perf.total_recovered_amount == 0
 
 

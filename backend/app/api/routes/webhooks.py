@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
 import json
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -12,6 +14,14 @@ from app.domains.payments.normalizer import normalize_payment_event
 from app.domains.payments.service import process_payment_event
 from app.integrations.razorpay.webhook import verify_webhook_signature
 from app.models.webhook_event import WebhookEvent
+
+logger = logging.getLogger(__name__)
+
+
+def _as_dict(value) -> dict:
+    """Razorpay sends empty objects (e.g. notes) as [] - normalise to dict."""
+    return value if isinstance(value, dict) else {}
+
 
 router = APIRouter(
     prefix="/webhooks",
@@ -27,6 +37,14 @@ async def razorpay_webhook(
     db: Session = Depends(get_db),
 ):
     raw_body = await request.body()
+
+    if not settings.razorpay_webhook_secret:
+        # An empty secret makes every HMAC trivially forgeable - refuse instead.
+        logger.error("RAZORPAY_WEBHOOK_SECRET is not configured; rejecting webhook.")
+        raise HTTPException(
+            status_code=503,
+            detail="Webhook verification is not configured",
+        )
 
     if not x_razorpay_signature:
         raise HTTPException(
@@ -92,8 +110,8 @@ async def razorpay_webhook(
 
         # 1. Authoritative resolution for payment_link.paid via RecoveryAttempt
         if event_type == "payment_link.paid":
-            plink_entity = payload.get("payload", {}).get("payment_link", {}).get("entity", {})
-            ref_id = plink_entity.get("reference_id") or (plink_entity.get("notes", {}) or {}).get("recovery_id")
+            plink_entity = _as_dict(_as_dict(_as_dict(payload.get("payload")).get("payment_link")).get("entity"))
+            ref_id = plink_entity.get("reference_id") or _as_dict(plink_entity.get("notes")).get("recovery_id")
             if ref_id:
                 from app.models.recovery_attempt import RecoveryAttempt
                 attempt = db.scalar(
@@ -104,8 +122,9 @@ async def razorpay_webhook(
 
         # 2. Resolution for payment events via payment notes
         if not merchant_id:
-            notes = (payload.get("payload", {}).get("payment", {}).get("entity", {}) or {}).get("notes", {})
-            if isinstance(notes, dict) and "merchant_id" in notes:
+            payment_entity = _as_dict(_as_dict(_as_dict(payload.get("payload")).get("payment")).get("entity"))
+            notes = _as_dict(payment_entity.get("notes"))
+            if "merchant_id" in notes:
                 try:
                     merchant_id = UUID(str(notes["merchant_id"]))
                 except (ValueError, TypeError):
@@ -130,8 +149,29 @@ async def razorpay_webhook(
         )
 
         db.add(webhook_event)
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            # A concurrent delivery of the same event inserted it first.
+            db.rollback()
+            return {
+                "status": "duplicate",
+                "event_id": x_razorpay_event_id,
+            }
         db.refresh(webhook_event)
+
+    if webhook_event.merchant_id is None and event_type != "payment_link.paid":
+        # Cannot attribute this payment to a merchant. Record it and acknowledge
+        # (a 5xx would make Razorpay retry an unprocessable event forever).
+        webhook_event.processing_status = "ignored"
+        webhook_event.error_message = "No merchant could be resolved for this event"
+        webhook_event.processed_at = datetime.now(timezone.utc)
+        db.commit()
+        logger.warning("Ignoring webhook %s: no merchant resolved", x_razorpay_event_id)
+        return {
+            "status": "ignored",
+            "event_id": x_razorpay_event_id,
+        }
 
     try:
         if event_type == "payment_link.paid":
@@ -159,9 +199,10 @@ async def razorpay_webhook(
         db.add(webhook_event)
         db.commit()
 
+        logger.exception("Webhook %s processing failed", x_razorpay_event_id)
         raise HTTPException(
             status_code=500,
-            detail=f"Downstream payment processing failed: {exc}",
+            detail="Downstream payment processing failed",
         ) from exc
 
     return {

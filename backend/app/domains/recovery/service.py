@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
-from typing import Any
+import logging
+from typing import TYPE_CHECKING, Any
 import uuid
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
@@ -12,6 +13,26 @@ from app.models.recovery_policy import RecoveryPolicy
 from app.models.recovery_attempt import RecoveryAttempt
 from app.models.recovery_campaign import RecoveryCampaign
 from app.integrations.llm.provider import LLMProvider
+
+if TYPE_CHECKING:
+    from app.integrations.razorpay import RazorpayClient
+
+
+logger = logging.getLogger(__name__)
+
+# Attempt states that are finished and can no longer change financially.
+TERMINAL_ATTEMPT_STATUSES = ("recovered", "failed", "expired")
+# Attempt states that can still expire (no verified settlement yet).
+EXPIRABLE_ATTEMPT_STATUSES = ("pending", "approved", "executing", "executed")
+
+
+def _lock_merchant_recovery(db: Session, merchant_id: uuid.UUID) -> None:
+    """
+    Serializes campaign creation per merchant for the rest of the transaction,
+    so two concurrent campaigns cannot both pass the max_exposure check using
+    the same pre-existing exposure figure (PostgreSQL advisory lock).
+    """
+    db.execute(select(func.pg_advisory_xact_lock(func.hashtext(f"recovery:{merchant_id}"))))
 
 
 class NoTargetPaymentsAvailableError(ValueError):
@@ -33,6 +54,8 @@ def create_recovery_campaign(
     for each target failed payment.
     """
     from app.domains.recovery.economics import evaluate_recovery_economics
+
+    _lock_merchant_recovery(db, incident.merchant_id)
 
     # 1. Resolve target failed payments if not explicitly provided
     if target_payments is None:
@@ -77,7 +100,9 @@ def create_recovery_campaign(
         )
 
     # 2. Evaluate recovery candidate economics
-    candidates = evaluate_recovery_economics(db, incident, diagnosis, policy)
+    candidates = evaluate_recovery_economics(
+        db, incident, diagnosis, policy, target_count=len(target_payments)
+    )
     eligible_candidates = [c for c in candidates if c.is_eligible]
 
     priority = {"retry": 4, "grace_period": 3, "incentive": 2, "ops_review": 1}
@@ -463,6 +488,7 @@ def create_recovery_campaign(
         guardrail_result=guardrail_eval,
         adaptive_result=adaptive_result,
         operational_memory=operational_memory,
+        target_count=target_count,
     )
 
     # 5. Create RecoveryCampaign
@@ -479,6 +505,9 @@ def create_recovery_campaign(
         decision_evidence=evidence,
     )
     db.add(campaign)
+    if incident.status in ("detected", "diagnosed"):
+        incident.status = "recovering"
+        db.add(incident)
     db.flush()
 
     record_audit_event(
@@ -568,7 +597,7 @@ def decide_recovery_action(
 def execute_recovery_attempt(
     db: Session,
     attempt: RecoveryAttempt,
-    client: RazorpayClient = None,
+    client: "RazorpayClient | None" = None,
 ) -> RecoveryAttempt:
     from app.integrations.razorpay import RazorpayClient
     from app.domains.recovery.guardrails import (
@@ -580,6 +609,28 @@ def execute_recovery_attempt(
     # 0. Idempotent check: if already executed with link, return existing attempt
     if attempt.status == "executed" and attempt.payment_link_id:
         return attempt
+
+    # 0b. Resume an attempt left in 'executing' by a crash between the
+    # 'executing' commit and the gateway response. The gateway lookup by
+    # reference_id below reuses any link that was already created.
+    if attempt.status == "executing":
+        attempt.status = "approved"
+        db.add(attempt)
+        record_audit_event(
+            db=db,
+            merchant_id=attempt.merchant_id,
+            incident_id=attempt.incident_id,
+            campaign_id=attempt.campaign_id,
+            recovery_attempt_id=attempt.id,
+            payment_id=attempt.payment_id,
+            event_type=RecoveryAuditEventType.RECOVERY_EXECUTION_STARTED,
+            actor_type="system",
+            actor_id="execution_service",
+            previous_state="executing",
+            new_state="approved",
+            reason_code="EXECUTION_RESUMED",
+            explanation=f"Resuming interrupted execution of {attempt.recovery_id}.",
+        )
 
     # Defensively evaluate execution guardrails before any gateway interaction
     guardrail_result = evaluate_execution_guardrails(db, attempt)
@@ -597,6 +648,8 @@ def execute_recovery_attempt(
             reason_code=guardrail_result.reason_code,
             explanation=f"Execution guardrail blocked attempt: {guardrail_result.explanation}",
         )
+        # Persist the block in the audit ledger before signalling the caller.
+        db.commit()
         raise GuardrailViolationError(guardrail_result.explanation, result=guardrail_result)
 
     if not attempt.payment:
@@ -709,7 +762,10 @@ def process_recovery_webhook(db: Session, payload: dict) -> None:
     plink_entity = payload.get("payload", {}).get("payment_link", {}).get("entity", {})
     payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
 
-    recovery_id = plink_entity.get("reference_id") or plink_entity.get("notes", {}).get("recovery_id")
+    # Razorpay sends empty notes as [] rather than {}
+    plink_notes = plink_entity.get("notes")
+    plink_notes = plink_notes if isinstance(plink_notes, dict) else {}
+    recovery_id = plink_entity.get("reference_id") or plink_notes.get("recovery_id")
     if not recovery_id:
         raise ValueError("Missing recovery_id or reference_id in payment link webhook")
 
@@ -831,53 +887,136 @@ def process_recovery_webhook(db: Session, payload: dict) -> None:
         },
     )
 
-    if attempt.campaign:
-        all_attempts = attempt.campaign.recovery_attempts
-        if all(a.status in ["recovered", "failed", "expired"] for a in all_attempts):
-            attempt.campaign.status = "completed"
-            db.add(attempt.campaign)
-
-            recovered_count = sum(1 for a in all_attempts if a.status == "recovered")
-            failed_count = sum(1 for a in all_attempts if a.status in ["failed", "expired"])
-            gross_recovered = sum(a.recovered_amount for a in all_attempts if a.status == "recovered")
-
-            record_audit_event(
-                db=db,
-                merchant_id=attempt.campaign.merchant_id,
-                incident_id=attempt.campaign.incident_id,
-                campaign_id=attempt.campaign.id,
-                event_type=RecoveryAuditEventType.CAMPAIGN_COMPLETED,
-                actor_type="system",
-                actor_id="recovery_service",
-                previous_state="executing",
-                new_state="completed",
-                reason_code="ALL_ATTEMPTS_SETTLED",
-                explanation=f"Campaign {attempt.campaign.campaign_id} completed.",
-                evidence={
-                    "target_count": len(all_attempts),
-                    "recovered_count": recovered_count,
-                    "failed_count": failed_count,
-                    "gross_recovered_amount": gross_recovered,
-                    "total_incentive_cost": attempt.campaign.total_incentive_cost,
-                },
-            )
-
-            # Phase 2: Observational Adaptive Decision Evaluation
-            from app.domains.recovery.evaluation import evaluate_campaign_adaptive_decision
-            try:
-                evaluate_campaign_adaptive_decision(db=db, campaign=attempt.campaign, persist=True)
-            except Exception:
-                # Observational learning signals must never disrupt webhook settlement
-                pass
-
     db.add(attempt)
     db.flush()
+
+    if attempt.campaign:
+        complete_campaign_if_settled(db, attempt.campaign)
+
+
+def complete_campaign_if_settled(db: Session, campaign: RecoveryCampaign) -> bool:
+    """
+    Marks a campaign 'completed' (and its incident 'resolved') once every
+    attempt has reached a terminal state. Returns True if it was completed now.
+    """
+    from app.domains.recovery.audit import record_audit_event, RecoveryAuditEventType
+
+    if campaign.status == "completed":
+        return False
+
+    all_attempts = campaign.recovery_attempts
+    if not all_attempts or not all(a.status in TERMINAL_ATTEMPT_STATUSES for a in all_attempts):
+        return False
+
+    previous_status = campaign.status
+    campaign.status = "completed"
+    db.add(campaign)
+
+    recovered_count = sum(1 for a in all_attempts if a.status == "recovered")
+    failed_count = sum(1 for a in all_attempts if a.status in ("failed", "expired"))
+    gross_recovered = sum(a.recovered_amount for a in all_attempts if a.status == "recovered")
+
+    record_audit_event(
+        db=db,
+        merchant_id=campaign.merchant_id,
+        incident_id=campaign.incident_id,
+        campaign_id=campaign.id,
+        event_type=RecoveryAuditEventType.CAMPAIGN_COMPLETED,
+        actor_type="system",
+        actor_id="recovery_service",
+        previous_state=previous_status,
+        new_state="completed",
+        reason_code="ALL_ATTEMPTS_SETTLED",
+        explanation=f"Campaign {campaign.campaign_id} completed.",
+        evidence={
+            "target_count": len(all_attempts),
+            "recovered_count": recovered_count,
+            "failed_count": failed_count,
+            "gross_recovered_amount": gross_recovered,
+            "total_incentive_cost": campaign.total_incentive_cost,
+        },
+    )
+
+    incident = campaign.incident
+    if incident is not None and incident.status != "resolved":
+        incident.status = "resolved"
+        db.add(incident)
+
+    # Phase 2: Observational Adaptive Decision Evaluation
+    from app.domains.recovery.evaluation import evaluate_campaign_adaptive_decision
+    try:
+        evaluate_campaign_adaptive_decision(db=db, campaign=campaign, persist=True)
+    except Exception:
+        # Observational learning signals must never disrupt settlement
+        logger.exception("Adaptive evaluation failed for campaign %s", campaign.campaign_id)
+
+    return True
+
+
+def expire_stale_attempts(
+    db: Session,
+    merchant_id: uuid.UUID,
+    now: datetime | None = None,
+) -> int:
+    """
+    Moves attempts whose payment window has passed (expires_at < now) without
+    verified settlement to 'expired', then completes any campaign whose attempts
+    are all terminal. Without this, campaigns could only complete if every
+    single payment was recovered. Returns the number of attempts expired.
+    """
+    from app.domains.recovery.audit import record_audit_event, RecoveryAuditEventType
+
+    now = now or datetime.now(timezone.utc)
+    stale = db.scalars(
+        select(RecoveryAttempt)
+        .where(
+            RecoveryAttempt.merchant_id == merchant_id,
+            RecoveryAttempt.status.in_(EXPIRABLE_ATTEMPT_STATUSES),
+            RecoveryAttempt.expires_at.is_not(None),
+            RecoveryAttempt.expires_at < now,
+        )
+        .with_for_update(skip_locked=True)
+    ).all()
+
+    if not stale:
+        return 0
+
+    campaigns: dict[uuid.UUID, RecoveryCampaign] = {}
+    for attempt in stale:
+        previous = attempt.status
+        attempt.status = "expired"
+        db.add(attempt)
+        record_audit_event(
+            db=db,
+            merchant_id=attempt.merchant_id,
+            incident_id=attempt.incident_id,
+            campaign_id=attempt.campaign_id,
+            recovery_attempt_id=attempt.id,
+            payment_id=attempt.payment_id,
+            event_type=RecoveryAuditEventType.RECOVERY_FAILED,
+            actor_type="system",
+            actor_id="expiry_sweeper",
+            previous_state=previous,
+            new_state="expired",
+            reason_code="ATTEMPT_EXPIRED",
+            explanation=f"Recovery attempt {attempt.recovery_id} expired without verified payment.",
+            evidence={"expires_at": attempt.expires_at.isoformat()},
+        )
+        if attempt.campaign is not None:
+            campaigns[attempt.campaign.id] = attempt.campaign
+
+    db.flush()
+    for campaign in campaigns.values():
+        complete_campaign_if_settled(db, campaign)
+
+    db.commit()
+    return len(stale)
 
 
 def orchestrate_recovery(
     db: Session,
     incident: Incident,
-    client: RazorpayClient = None,
+    client: "RazorpayClient | None" = None,
 ) -> RecoveryAttempt:
     from app.domains.diagnosis.service import diagnose_incident
     from app.models.recovery_policy import RecoveryPolicy
@@ -920,11 +1059,14 @@ def orchestrate_recovery(
 
     # 4. Create RecoveryCampaign and individual RecoveryAttempts with concurrency race protection
     try:
+        from app.integrations.llm.factory import get_default_llm_provider
+
         campaign, attempts = create_recovery_campaign(
             db=db,
             incident=incident,
             diagnosis=diagnosis,
             policy=policy,
+            llm_provider=get_default_llm_provider(),
         )
     except IntegrityError:
         db.rollback()
@@ -948,6 +1090,7 @@ def orchestrate_recovery(
             reason_code="NO_TARGET_PAYMENTS_AVAILABLE",
             explanation=str(exc),
         )
+        db.commit()
         return None
 
     # 5. If approved for automatic execution, execute all attempts

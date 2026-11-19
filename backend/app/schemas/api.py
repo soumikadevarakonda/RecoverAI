@@ -90,6 +90,9 @@ class RecoveryAttemptDetailResponse(BaseModel):
     payment_link_id: Optional[str] = None
     short_url: Optional[str] = None
     decision_evidence: Optional[dict] = None
+    # Amounts in minor units (paise)
+    payment_amount: Optional[int] = None
+    charge_amount: Optional[int] = None
 
 
 class RecoveryAuditEventResponse(BaseModel):
@@ -107,3 +110,34 @@ class RecoveryAuditEventResponse(BaseModel):
     campaign_id: Optional[UUID] = None
     incident_id: Optional[UUID] = None
     payment_id: Optional[UUID] = None
+
+
+class DetectedIncidentSummary(BaseModel):
+    incident_id: UUID
+    method: Optional[str] = None
+    bank: Optional[str] = None
+    error_code: Optional[str] = None
+    error_step: Optional[str] = None
+    status: str
+    revenue_at_risk: int
+    campaign_id: Optional[str] = None
+    campaign_status: Optional[str] = None
+    selected_action: Optional[str] = None
+    error: Optional[str] = None
+
+
+class DetectionRunResponse(BaseModel):
+    window_start: datetime
+    window_end: datetime
+    baseline_start: datetime
+    baseline_end: datetime
+    incidents_detected: int
+    incidents: List[DetectedIncidentSummary] = []
+
+
+class SimulatedPaymentResponse(BaseModel):
+    recovery_id: str
+    status: str
+    recovered_amount: int
+    payment_link_id: Optional[str] = None
+    resulting_payment_id: Optional[str] = None

@@ -7,6 +7,9 @@ from app.models.diagnosis import Diagnosis
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.recovery_attempt import RecoveryAttempt
 
+# Attempt states that still commit (or may still commit) an incentive.
+EXPOSURE_STATUSES = ("pending", "approved", "executing", "executed")
+
 DEFAULT_RECOVERY_RATES = {
     "retry": 0.30,
     "grace_period": 0.20,
@@ -18,7 +21,8 @@ DEFAULT_RECOVERY_RATES = {
 class ActionEconomics(BaseModel):
     action: str
     expected_recovery_amount: int = Field(..., description="Expected recovery amount in minor units")
-    action_cost: int = Field(..., description="Action cost to the merchant in minor units")
+    action_cost: int = Field(..., description="Per-attempt action cost to the merchant in minor units")
+    total_action_cost: int = Field(0, description="Action cost across all targeted payments in minor units")
     expected_net_recovery_value: int = Field(..., description="Expected net recovery value in minor units")
     expected_recovery_rate: float = Field(..., description="Assumed recovery rate")
     is_eligible: bool = Field(..., description="Whether this action is allowed and eligible")
@@ -33,11 +37,20 @@ def evaluate_recovery_economics(
     policy: RecoveryPolicy = None,
     rates: dict[str, float] = None,
     min_attempts: int = 5,
+    target_count: int | None = None,
 ) -> list[ActionEconomics]:
+    """
+    target_count: number of payments the campaign would target. Per-attempt
+    costs (incentives) are paid once per targeted payment, so the total cost is
+    cost * target_count. Defaults to the incident's failed payment count.
+    """
     if rates is None:
         rates = DEFAULT_RECOVERY_RATES
 
     revenue_at_risk = incident.revenue_at_risk or 0
+    if target_count is None:
+        target_count = incident.current_failed_count or 1
+    target_count = max(1, int(target_count))
     allowed_actions = policy.allowed_actions or []
     candidate_actions = ["retry", "grace_period", "incentive", "ops_review"]
 
@@ -47,7 +60,7 @@ def evaluate_recovery_economics(
     raw_exposure = db.scalar(
         select(func.sum(RecoveryAttempt.incentive_amount)).where(
             RecoveryAttempt.merchant_id == incident.merchant_id,
-            RecoveryAttempt.status.in_(["pending", "approved", "executed"]),
+            RecoveryAttempt.status.in_(EXPOSURE_STATUSES),
         )
     )
     active_exposure = int(raw_exposure) if raw_exposure is not None else 0
@@ -90,6 +103,9 @@ def evaluate_recovery_economics(
                 is_eligible = False
                 reason_ineligible = f"Proposed incentive {proposed_incentive} exceeds policy max_incentive {policy.max_incentive}"
             elif (active_exposure + proposed_incentive) > policy.max_exposure:
+                # Per-incentive screen only. The aggregate campaign exposure
+                # (incentive x target payments) is enforced by the guardrail
+                # engine, which vetoes with an audit trail.
                 is_eligible = False
                 reason_ineligible = f"Adding proposed incentive {proposed_incentive} would exceed policy max_exposure {policy.max_exposure} (current active: {active_exposure})"
 
@@ -116,9 +132,10 @@ def evaluate_recovery_economics(
             rate_source = "configured"
 
         # Calculate values
+        total_cost = cost * target_count
         if is_eligible:
             expected_recovery_amount = int(revenue_at_risk * rate)
-            expected_net_recovery_value = expected_recovery_amount - cost
+            expected_net_recovery_value = expected_recovery_amount - total_cost
         else:
             expected_recovery_amount = 0
             expected_net_recovery_value = 0
@@ -128,6 +145,7 @@ def evaluate_recovery_economics(
                 action=action,
                 expected_recovery_amount=expected_recovery_amount,
                 action_cost=cost,
+                total_action_cost=total_cost,
                 expected_net_recovery_value=expected_net_recovery_value,
                 expected_recovery_rate=rate,
                 is_eligible=is_eligible,

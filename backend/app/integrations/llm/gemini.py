@@ -1,4 +1,3 @@
-import os
 import httpx
 from typing import Type, TypeVar
 from pydantic import BaseModel
@@ -11,10 +10,14 @@ class GeminiLLMProvider(LLMProvider):
     def __init__(
         self,
         api_key: str | None = None,
-        model_name: str = "gemini-1.5-pro",
+        model_name: str | None = None,
     ):
-        self.api_key = api_key or os.getenv("GEMINI_API_KEY", "")
-        self.model_name = model_name
+        from app.core.config import settings
+
+        # Read from Settings (which loads backend/.env), not os.environ.
+        self.api_key = api_key or settings.gemini_api_key
+        # gemini-1.5-* models are retired; the model is configurable via GEMINI_MODEL.
+        self.model_name = model_name or settings.gemini_model
         self.last_token_usage = None
 
     def generate_structured_output(
@@ -27,7 +30,10 @@ class GeminiLLMProvider(LLMProvider):
         if not self.api_key:
             raise ValueError("GEMINI_API_KEY is not set")
 
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent?key={self.api_key}"
+        # Send the key in a header rather than the query string so it does not
+        # end up in proxy/access logs or exception messages containing the URL.
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model_name}:generateContent"
+        headers = {"x-goog-api-key": self.api_key}
 
         # Build contents
         contents = {
@@ -59,7 +65,7 @@ class GeminiLLMProvider(LLMProvider):
         contents["generationConfig"]["responseSchema"] = schema
 
         with httpx.Client() as client:
-            response = client.post(url, json=contents, timeout=timeout)
+            response = client.post(url, json=contents, headers=headers, timeout=timeout)
             response.raise_for_status()
             
             resp_data = response.json()
