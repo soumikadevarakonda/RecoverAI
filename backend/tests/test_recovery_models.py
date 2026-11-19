@@ -2,7 +2,11 @@ from datetime import datetime, timedelta, timezone
 import uuid
 import pytest
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, ProgrammingError
+
+# CHECK-constraint violations surface as IntegrityError with psycopg but as
+# ProgrammingError with pg8000 (which only maps unique violations to IntegrityError).
+CHECK_VIOLATION = (IntegrityError, ProgrammingError)
 
 from app.db.session import SessionLocal
 from app.models.diagnosis import Diagnosis
@@ -214,7 +218,7 @@ def test_invalid_negative_monetary_values(db_session, create_merchant, create_in
         max_exposure=100,
     )
     db_session.add(p_invalid)
-    with pytest.raises(IntegrityError):
+    with pytest.raises(CHECK_VIOLATION):
         db_session.commit()
     db_session.rollback()
 
@@ -224,7 +228,7 @@ def test_invalid_negative_monetary_values(db_session, create_merchant, create_in
         max_exposure=-10,
     )
     db_session.add(p_invalid_exp)
-    with pytest.raises(IntegrityError):
+    with pytest.raises(CHECK_VIOLATION):
         db_session.commit()
     db_session.rollback()
 
@@ -237,7 +241,7 @@ def test_invalid_negative_monetary_values(db_session, create_merchant, create_in
         incentive_amount=-5,
     )
     db_session.add(att_invalid_inc)
-    with pytest.raises(IntegrityError):
+    with pytest.raises(CHECK_VIOLATION):
         db_session.commit()
     db_session.rollback()
 
@@ -249,7 +253,7 @@ def test_invalid_negative_monetary_values(db_session, create_merchant, create_in
         recovered_amount=-100,
     )
     db_session.add(att_invalid_rec)
-    with pytest.raises(IntegrityError):
+    with pytest.raises(CHECK_VIOLATION):
         db_session.commit()
     db_session.rollback()
 

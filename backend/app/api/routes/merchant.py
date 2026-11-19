@@ -182,7 +182,9 @@ def get_dashboard_summary(
         )
     ) or 0
 
-    recovery_rate = float(recovered_revenue) / float(total_risk) if total_risk > 0 else 0.0
+    # Clamped: recovered amounts can legitimately lag or exceed an incident's
+    # initial estimate, but a rate above 100% is meaningless to display.
+    recovery_rate = min(1.0, float(recovered_revenue) / float(total_risk)) if total_risk > 0 else 0.0
 
     return DashboardSummaryResponse(
         revenue_at_risk=revenue_at_risk,

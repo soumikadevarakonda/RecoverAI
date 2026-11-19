@@ -155,7 +155,7 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
         baseline_failed_amount=1000_00,
         absolute_rate_increase=0.3,
         relative_degradation=10.0,
-        revenue_at_risk=10000_00,
+        revenue_at_risk=17000_00,  # 17 targeted payments of Rs 1,000, matching the campaign below
         window_start=past_inc_time - timedelta(minutes=30),
         window_end=past_inc_time,
         baseline_start=past_inc_time - timedelta(hours=2),

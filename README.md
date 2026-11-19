@@ -355,6 +355,8 @@ $env:TEST_DATABASE_URL="postgresql+psycopg://recoverai:recoverai@localhost:5433/
 python -m pytest backend/tests/ -q
 ```
 
+The suite (245 tests at the time of writing) is verified green against PostgreSQL 18, and CI runs it on Python 3.11 and 3.13. If the psycopg binary is blocked on your machine (see Troubleshooting), the pure-Python driver works too: `pip install pg8000` and use `postgresql+pg8000://` URLs for `DATABASE_URL` / `TEST_DATABASE_URL`.
+
 ### Key Test Suites:
 - `test_recovery_guardrails.py`: Verifies exposure caps, action whitelists, and veto logic.
 - `test_recovery_economics.py`: Validates financial arithmetic and net ROI calculations.
@@ -428,7 +430,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/merchant/detection/run -H "X-Merchant-
 ```
 
 ### Troubleshooting
-- **`ImportError: no pq wrapper available` / "DLL load failed ... Application Control policy has blocked this file"** (Windows): the bundled `psycopg-binary` library is being blocked by an endpoint policy such as WDAC or AppLocker. Ask your administrator to allow `psycopg_binary\\*.dll` and `libpq.dll`, install a PostgreSQL client so psycopg can use the system `libpq` (`pip install "psycopg[c]"` needs a compiler), or run the backend in Docker / WSL.
+- **`ImportError: no pq wrapper available` / "DLL load failed ... Application Control policy has blocked this file"** (Windows): the bundled `psycopg-binary` library is being blocked by an endpoint policy such as WDAC or AppLocker. Ask your administrator to allow `psycopg_binary\\*.dll` and `libpq.dll`, install a PostgreSQL client so psycopg can use the system `libpq` (`pip install "psycopg[c]"` needs a compiler), or run the backend in Docker / WSL. As a workaround you can use the pure-Python driver instead (`pip install pg8000`, then `postgresql+pg8000://...` URLs).
 - **Webhooks return 503**: `RAZORPAY_WEBHOOK_SECRET` is empty.
 - **Tests exit with "TEST_DATABASE_URL is not set"**: intended; see section 11.
 - **Production requests return 401/500**: send `Authorization: Bearer <token>` from `issue_merchant_token.py`, and set `AUTH_TOKEN_SECRET`.

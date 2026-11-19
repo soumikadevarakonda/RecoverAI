@@ -1,16 +1,23 @@
 ﻿from datetime import datetime
 import uuid
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, literal_column, select
 from sqlalchemy.orm import Session
 
 from app.domains.cohorts.schemas import CohortMetrics
 from app.models.payment import Payment
 
 
+def _coalesced(column, default: str, label: str):
+    # Inline the default as a SQL literal. As a bind parameter it is sent once
+    # per occurrence by drivers with positional parameters (e.g. pg8000), and
+    # PostgreSQL then cannot prove the SELECT and GROUP BY expressions equal.
+    return func.coalesce(column, literal_column(f"'{default}'")).label(label)
+
+
 def _dimension_exprs():
     return (
-        func.coalesce(Payment.method, "UNKNOWN").label("method"),
-        func.coalesce(Payment.bank, "UNKNOWN").label("bank"),
+        _coalesced(Payment.method, "UNKNOWN", "method"),
+        _coalesced(Payment.bank, "UNKNOWN", "bank"),
     )
 
 
@@ -26,8 +33,8 @@ def _dominant_failure_signatures(
     by failed amount, then alphabetically, so results are deterministic.
     """
     method_expr, bank_expr = _dimension_exprs()
-    error_code_expr = func.coalesce(Payment.error_code, "NONE").label("error_code")
-    error_step_expr = func.coalesce(Payment.error_step, "NONE").label("error_step")
+    error_code_expr = _coalesced(Payment.error_code, "NONE", "error_code")
+    error_step_expr = _coalesced(Payment.error_step, "NONE", "error_step")
 
     stmt = (
         select(
