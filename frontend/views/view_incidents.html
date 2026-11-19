@@ -23,29 +23,29 @@
                         <span class="text-[11px] font-mono uppercase text-text-subtle">Causal Root-Cause Chain</span>
                         <h3 class="font-heading text-[20px] font-bold text-white mt-0.5">Isolated Upstream Authorization Failure</h3>
                     </div>
-                    <span id="inc-confidence-badge" class="px-2.5 py-1 rounded bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20 text-[12px] font-mono font-bold">—</span>
+                    <span id="inc-confidence-badge" class="px-2.5 py-1 rounded bg-accent-cyan/10 text-accent-cyan border border-accent-cyan/20 text-[12px] font-mono font-bold">CONFIDENCE 100%</span>
                 </div>
 
                 <!-- Visual Step-by-Step Causal Chain -->
                 <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 font-mono text-[13px]">
                     <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-1 relative">
                         <span class="text-[10px] text-text-subtle uppercase block font-mono">1. Bank &amp; Method</span>
-                        <span id="inc-bank-method" class="text-white font-bold text-[15px] block font-heading">—</span>
+                        <span id="inc-bank-method" class="text-white font-bold text-[15px] block font-heading">HDFC · UPI</span>
                         <span class="text-[11px] text-text-muted">Target cohort</span>
                     </div>
                     <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-1 relative">
                         <span class="text-[10px] text-text-subtle uppercase block font-mono">2. Error Signature</span>
-                        <span id="inc-error-code" class="text-accent-coral font-mono font-bold text-[14px] block">—</span>
+                        <span id="inc-error-code" class="text-accent-coral font-mono font-bold text-[14px] block">GATEWAY_ERROR</span>
                         <span class="text-[11px] text-text-muted">Upstream timeout</span>
                     </div>
                     <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-1 relative">
                         <span class="text-[10px] text-text-subtle uppercase block font-mono">3. Pipeline Step</span>
-                        <span id="inc-error-step" class="text-white font-mono font-bold text-[13px] block">—</span>
+                        <span id="inc-error-step" class="text-white font-mono font-bold text-[13px] block">payment_authorization</span>
                         <span class="text-[11px] text-text-muted">Handshake phase</span>
                     </div>
                     <div class="p-4 rounded-lg bg-surface-elevated border border-accent-coral/30 space-y-1 relative">
                         <span class="text-[10px] text-accent-coral uppercase block font-mono">4. Failure Jump</span>
-                        <span id="inc-failure-jump" class="text-accent-coral font-mono font-bold text-[15px] block">—</span>
+                        <span id="inc-failure-jump" class="text-accent-coral font-mono font-bold text-[15px] block">28.6% vs 3.3%</span>
                         <span class="text-[11px] text-text-muted">+25.2% pts delta</span>
                     </div>
                 </div>
@@ -54,9 +54,11 @@
                 <div class="p-4 rounded-lg bg-surface-elevated border border-border-hairline space-y-1.5">
                     <div class="flex items-center gap-2 text-[12px] font-mono text-accent-cyan uppercase font-bold">
                         <span class="material-symbols-outlined text-[16px]">psychology</span>
-                        <span id="inc-diag-heading">Diagnosis Synthesis</span>
+                        Diagnosis Synthesis &bull; Authorization-Step Degradation
                     </div>
-                    <p id="inc-diag-explanation" class="text-[14px] text-text-main leading-relaxed font-body">—</p>
+                    <p id="inc-diag-explanation" class="text-[14px] text-text-main leading-relaxed font-body">
+                        Degradation is strictly localized to bank <span class="font-mono font-bold text-white">HDFC</span> for payment method <span class="font-mono font-bold text-white">UPI</span> during the authorization handshake. Other banks maintain nominal failure rates (&lt;3.5%). The error pattern indicates an acquirer-side temporary gateway timeout rather than consumer balance exhaustion.
+                    </p>
                 </div>
             </div>
 
@@ -80,17 +82,17 @@
                             <tbody class="divide-y divide-border-hairline">
                                 <tr>
                                     <td class="py-3 px-4 text-text-muted">Baseline (2h)</td>
-                                    <td id="inc-base-total" class="py-3 px-4 text-white">—</td>
-                                    <td id="inc-base-failed" class="py-3 px-4 text-white">—</td>
-                                    <td id="inc-base-rate" class="py-3 px-4 text-text-muted">—</td>
-                                    <td id="inc-base-vol" class="py-3 px-4 text-right text-text-muted">—</td>
+                                    <td id="inc-base-total" class="py-3 px-4 text-white">30</td>
+                                    <td id="inc-base-failed" class="py-3 px-4 text-white">1</td>
+                                    <td id="inc-base-rate" class="py-3 px-4 text-text-muted">3.3%</td>
+                                    <td id="inc-base-vol" class="py-3 px-4 text-right text-text-muted">₹10,000</td>
                                 </tr>
                                 <tr class="bg-accent-coral/5 font-bold">
                                     <td class="py-3 px-4 text-accent-coral">Incident (30m)</td>
-                                    <td id="inc-curr-total" class="py-3 px-4 text-white">—</td>
-                                    <td id="inc-curr-failed" class="py-3 px-4 text-accent-coral">—</td>
-                                    <td id="inc-curr-rate" class="py-3 px-4 text-accent-coral">—</td>
-                                    <td id="inc-curr-vol" class="py-3 px-4 text-right text-accent-coral">—</td>
+                                    <td id="inc-curr-total" class="py-3 px-4 text-white">28</td>
+                                    <td id="inc-curr-failed" class="py-3 px-4 text-accent-coral">8</td>
+                                    <td id="inc-curr-rate" class="py-3 px-4 text-accent-coral">28.6%</td>
+                                    <td id="inc-curr-vol" class="py-3 px-4 text-right text-accent-coral">₹14,000</td>
                                 </tr>
                             </tbody>
                         </table>

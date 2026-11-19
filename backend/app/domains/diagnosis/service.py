@@ -1,12 +1,10 @@
-import logging
+from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.diagnosis import Diagnosis
 from app.models.incident import Incident
 from app.models.payment import Payment
-
-logger = logging.getLogger(__name__)
 
 
 def diagnose_incident(db: Session, incident: Incident) -> Diagnosis:
@@ -15,7 +13,7 @@ def diagnose_incident(db: Session, incident: Incident) -> Diagnosis:
         select(Payment).where(
             Payment.merchant_id == incident.merchant_id,
             Payment.created_at >= incident.window_start,
-            Payment.created_at <= incident.window_end,
+            Payment.created_at < incident.window_end,
         )
     ).all()
 
@@ -33,10 +31,7 @@ def diagnose_incident(db: Session, incident: Incident) -> Diagnosis:
 
     # --- Rule 1: Bank-Specific Degradation ---
     if incident.bank and incident.bank != "UNKNOWN":
-        # Same bank on the same method, compared against other banks on that method
-        bank_payments = [
-            p for p in payments if p.bank == incident.bank and p.method == incident.method
-        ]
+        bank_payments = [p for p in payments if p.bank == incident.bank]
         bank_failed = [p for p in bank_payments if p.status == "failed"]
         bank_total_cnt = len(bank_payments)
         bank_failed_cnt = len(bank_failed)
@@ -187,10 +182,6 @@ def diagnose_incident(db: Session, incident: Incident) -> Diagnosis:
         )
         db.add(diagnosis)
 
-    if incident.status == "detected":
-        incident.status = "diagnosed"
-        db.add(incident)
-
     db.commit()
     db.refresh(diagnosis)
 
@@ -214,7 +205,6 @@ def diagnose_incident(db: Session, incident: Incident) -> Diagnosis:
         )
         db.commit()
     except Exception:
-        db.rollback()
-        logger.exception("Failed to record DIAGNOSIS_CREATED audit event for incident %s", incident.id)
+        pass
 
     return diagnosis

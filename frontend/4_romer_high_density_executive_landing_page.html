@@ -1,0 +1,693 @@
+<html class="dark" lang="en" style=""><head></head><body class="font-body-md antialiased selection:bg-custom-btn-primary selection:text-white">```html
+
+
+
+
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Romer - The command dashboard for focused teams</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;520;600;700&amp;family=Inter:wght@400;500;600&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#e0e0ff",
+                        "on-primary": "#000ba6",
+                        "tertiary-fixed-dim": "#ffb689",
+                        "secondary-fixed": "#92f1ff",
+                        "secondary-container": "#00b1c2",
+                        "on-tertiary-fixed": "#311300",
+                        "background": "#131314",
+                        "primary": "#bec2ff",
+                        "on-secondary-container": "#003e44",
+                        "tertiary": "#ffb689",
+                        "on-background": "#e5e2e3",
+                        "error": "#ffb4ab",
+                        "primary-container": "#7a85ff",
+                        "primary-fixed-dim": "#bec2ff",
+                        "surface-tint": "#bec2ff",
+                        "on-secondary-fixed": "#001f23",
+                        "on-secondary": "#00363c",
+                        "on-surface": "#e5e2e3",
+                        "on-tertiary-fixed-variant": "#743500",
+                        "on-primary-fixed-variant": "#1f2bc8",
+                        "surface-dim": "#131314",
+                        "on-primary-fixed": "#000469",
+                        "outline": "#8f8fa1",
+                        "inverse-on-surface": "#313031",
+                        "surface-container": "#201f21",
+                        "secondary": "#50d8e9",
+                        "on-error-container": "#ffdad6",
+                        "surface": "#131314",
+                        "inverse-surface": "#e5e2e3",
+                        "on-primary-container": "#000992",
+                        "surface-container-lowest": "#0e0e0f",
+                        "outline-variant": "#454655",
+                        "on-error": "#690005",
+                        "surface-container-highest": "#353436",
+                        "tertiary-fixed": "#ffdbc8",
+                        "surface-variant": "#353436",
+                        "on-tertiary": "#512300",
+                        "tertiary-container": "#e0731d",
+                        "on-surface-variant": "#c6c5d8",
+                        "surface-bright": "#3a393a",
+                        "on-tertiary-container": "#471e00",
+                        "surface-container-high": "#2a2a2b",
+                        "surface-container-low": "#1c1b1d",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#50d8e9",
+                        "inverse-primary": "#3d4ae0",
+                        "on-secondary-fixed-variant": "#004f57",
+                        "custom-bg": "#070708",
+                        "custom-divider": "#232426",
+                        "custom-card-bg": "#101112",
+                        "custom-sidebar": "#0d0e0f",
+                        "custom-panel": "#111214",
+                        "custom-text-muted": "#9A9DA3",
+                        "custom-btn-primary": "#5E6BFF",
+                        "custom-btn-text": "#F0F1F2",
+                        "custom-divider-light": "#1B1C1E"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "xl": "40px",
+                        "gutter": "20px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "base": "4px",
+                        "sm": "8px",
+                        "margin-safe": "32px",
+                        "xs": "4px"
+                    },
+                    "fontFamily": {
+                        "h3": ["Manrope"],
+                        "h2": ["Manrope"],
+                        "body-md": ["Inter"],
+                        "h4": ["Manrope"],
+                        "body-lg": ["Inter"],
+                        "mono-data": ["Inter"],
+                        "h1": ["Manrope"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "h3": ["24px", { "lineHeight": "1.2", "letterSpacing": "-0.04em", "fontWeight": "520" }],
+                        "h2": ["32px", { "lineHeight": "1.2", "letterSpacing": "-0.05em", "fontWeight": "520" }],
+                        "body-md": ["14px", { "lineHeight": "1.5", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "h4": ["18px", { "lineHeight": "1.4", "letterSpacing": "-0.02em", "fontWeight": "520" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "mono-data": ["13px", { "lineHeight": "1", "letterSpacing": "-0.01em", "fontWeight": "400" }],
+                        "h1": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.05em", "fontWeight": "520" }],
+                        "label-sm": ["12px", { "lineHeight": "1", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "hero-headline": ["76px", { "lineHeight": "1.1", "letterSpacing": "-0.055em", "fontWeight": "520" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #070708; color: #e5e2e3; }
+        .glass-panel { background: rgba(16, 17, 18, 0.8); backdrop-filter: blur(20px); }
+        .inner-glow { box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1); }
+        .thin-border { border: 1px solid #232426; }
+    </style>
+<style>.dot-pattern { background-image: radial-gradient(#232426 1px, transparent 1px); background-size: 16px 16px; }</style>
+<!-- 1. Fixed Header -->
+<header class="bg-custom-bg w-full top-0 h-[80px] border-b border-custom-divider z-50 fixed">
+<div class="flex justify-between items-center w-full px-margin-safe max-w-[1728px] mx-auto h-full">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-full border border-custom-text-muted flex items-center justify-center text-on-surface font-h3 font-bold">R</div>
+<span class="font-h3 text-h3 font-bold tracking-tight text-on-surface">Romer</span>
+</div>
+<nav class="hidden md:flex gap-lg h-full items-center">
+<a class="font-body-md text-body-md text-primary border-b-2 border-primary pb-1 hover:text-primary transition-colors duration-200" href="#">Platform</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Dashboards</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Customers</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Pricing</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Resources</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Contact</a>
+</nav>
+<div class="flex gap-md">
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors duration-200 px-md py-sm rounded border border-custom-divider" href="#">Log in</a>
+<a class="font-body-md text-body-md bg-white text-black px-md py-sm rounded hover:bg-opacity-90 transition-colors duration-200 font-bold" href="#">Start free</a>
+</div>
+</div>
+</header>
+<main class="max-w-[1728px] mx-auto mt-[80px]">
+<!-- 2. Hero & 3. Hero Dashboard Mockup -->
+<section class="px-margin-safe relative pt-32 pb-20">
+<div class="max-w-[1516px] mx-auto">
+<div class="flex justify-between items-end mb-xl">
+<div class="">
+<h1 class="font-h3 text-hero-headline text-on-surface mb-md max-w-[1000px]">The command dashboard<br/>for focused teams</h1>
+<p class="font-body-lg text-[19px] text-custom-text-muted mb-lg max-w-2xl">Romer turns scattered signals, approvals, and operating data into one calm dashboard for leadership teams.</p>
+<div class="flex gap-md">
+<button class="bg-white text-black px-lg py-md rounded font-body-lg font-bold">Get started</button>
+<button class="bg-[#1a1b1d] border border-custom-divider text-on-surface px-lg py-md rounded font-body-lg hover:bg-custom-card-bg transition-colors">Book a demo</button>
+</div>
+</div>
+<div class="hidden lg:block text-right pb-sm">
+<a class="text-custom-text-muted font-mono-data hover:text-primary flex items-center gap-xs" href="#">Live operating layer romer.app/overview <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a>
+</div>
+</div>
+<!-- Hero Dashboard Mockup -->
+<div class="w-full bg-[#050505] rounded-xl border border-white/[0.05] overflow-hidden flex h-[620px] shadow-2xl relative">
+<!-- Multi-pane technical layout -->
+<div class="flex w-full h-full">
+<!-- Left Panel: Navigation & Telemetry Streams -->
+<div class="w-[280px] border-r border-white/[0.03] flex flex-col bg-[#070708]">
+<div class="p-6 border-b border-white/[0.03]">
+<div class="flex items-center gap-3 mb-1">
+<div class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(80,216,233,0.5)]"></div>
+<span class="text-[10px] font-mono-data text-on-surface font-bold tracking-widest uppercase">SYSTEM_HASH</span>
+</div>
+<div class="text-[10px] font-mono-data text-custom-text-muted/60 tracking-[0.2em] ml-5">0xAF92_ALPHA</div>
+</div>
+<div class="flex-1 p-6 flex flex-col gap-8 overflow-hidden">
+<!-- Telemetry Block 1 -->
+<div>
+<span class="text-[9px] font-mono-data text-custom-text-muted/40 uppercase tracking-[0.2em] block mb-3 border-b border-white/[0.03] pb-2">NODE_DENSITY</span>
+<div class="flex justify-between items-end mb-1">
+<span class="text-[20px] font-mono-data text-on-surface/80 leading-none">4,291</span>
+<span class="text-[9px] font-mono-data text-secondary/60">ACTV</span>
+</div>
+<svg class="w-full h-8 mt-2" preserveaspectratio="none" viewbox="0 0 100 20">
+<path d="M0,15 L10,12 L20,18 L30,5 L40,10 L50,8 L60,14 L70,2 L80,12 L90,8 L100,10" fill="none" opacity="0.6" stroke="#454655" stroke-width="0.5"></path>
+</svg>
+</div>
+<!-- Telemetry Block 2 -->
+<div>
+<span class="text-[9px] font-mono-data text-custom-text-muted/40 uppercase tracking-[0.2em] block mb-3 border-b border-white/[0.03] pb-2">PRIMARY.FLUX</span>
+<div class="flex justify-between items-end mb-1">
+<span class="text-[20px] font-mono-data text-on-surface/80 leading-none">0.84</span>
+<span class="text-[9px] font-mono-data text-primary/60">MB/s</span>
+</div>
+<svg class="w-full h-8 mt-2" preserveaspectratio="none" viewbox="0 0 100 20">
+<path d="M0,10 L10,8 L20,12 L30,4 L40,15 L50,5 L60,10 L70,8 L80,12 L90,6 L100,8" fill="none" opacity="0.6" stroke="#5E6BFF" stroke-width="0.5"></path>
+</svg>
+</div>
+<!-- Telemetry Block 3 -->
+<div>
+<span class="text-[9px] font-mono-data text-custom-text-muted/40 uppercase tracking-[0.2em] block mb-3 border-b border-white/[0.03] pb-2">CORE.LATENCY</span>
+<div class="flex justify-between items-end mb-1">
+<span class="text-[20px] font-mono-data text-on-surface/80 leading-none">1.24</span>
+<span class="text-[9px] font-mono-data text-custom-text-muted/60">ms</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Center Panel: Primary Analytical View -->
+<div class="flex-1 flex flex-col relative bg-[#050505]">
+<!-- Ultra-fine Grid Background -->
+<div class="absolute inset-0" style="background-image: linear-gradient(to right, rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.015) 1px, transparent 1px); background-size: 80px 80px;"></div>
+<div class="flex justify-between items-center px-10 py-6 border-b border-white/[0.03] z-10 bg-[#050505]/80 backdrop-blur-sm">
+<div class="flex items-center gap-6">
+<span class="text-[10px] font-mono-data text-on-surface uppercase tracking-[0.1em]">OSCILLATION.DELTA // Q3</span>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-[9px] font-mono-data text-custom-text-muted/40 uppercase tracking-[0.2em]">FREQ: 144Hz</span>
+</div>
+</div>
+<!-- Main Chart Area -->
+<div class="flex-1 relative p-10 z-10 flex flex-col justify-end pb-16">
+<!-- Chart Reference Lines -->
+<div class="absolute inset-0 px-10 py-16 flex flex-col justify-between pointer-events-none">
+<div class="border-t border-white/[0.02] w-full relative"><span class="absolute -top-3 -left-6 text-[8px] font-mono-data text-custom-text-muted/30">1.0</span></div>
+<div class="border-t border-white/[0.02] w-full relative"><span class="absolute -top-3 -left-6 text-[8px] font-mono-data text-custom-text-muted/30">0.5</span></div>
+<div class="border-t border-white/[0.02] w-full relative"><span class="absolute -top-3 -left-6 text-[8px] font-mono-data text-custom-text-muted/30">0.0</span></div>
+<div class="border-t border-white/[0.02] w-full relative"><span class="absolute -top-3 -left-6 text-[8px] font-mono-data text-custom-text-muted/30">-0.5</span></div>
+</div>
+<!-- Complex SVG Chart -->
+<div class="absolute inset-0 px-10 py-16">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 1000 400">
+<!-- Data Series 1 (Primary) -->
+<path d="M0,250 C150,250 250,150 400,150 C550,150 650,300 800,300 C950,300 1000,200 1000,200" fill="none" stroke="#50d8e9" stroke-width="1.5"></path>
+<!-- Area fill under primary -->
+<path d="M0,250 C150,250 250,150 400,150 C550,150 650,300 800,300 C950,300 1000,200 1000,200 L1000,400 L0,400 Z" fill="url(#primary-fade)" opacity="0.1"></path>
+<!-- Data Series 2 (Secondary) -->
+<path d="M0,200 L100,180 L250,220 L400,140 L550,260 L700,100 L850,240 L1000,160" fill="none" opacity="0.6" stroke="#5E6BFF" stroke-dasharray="2 4" stroke-width="1"></path>
+<!-- Sparse Points -->
+<circle cx="400" cy="150" fill="#050505" r="3" stroke="#50d8e9" stroke-width="1.5"></circle>
+<circle cx="800" cy="300" fill="#050505" r="3" stroke="#50d8e9" stroke-width="1.5"></circle>
+<circle cx="700" cy="100" fill="#5E6BFF" r="2"></circle>
+<!-- Technical Callouts -->
+<g transform="translate(415, 140)">
+<text fill="#50d8e9" font-family="Inter" font-size="9" font-weight="500" opacity="0.9">P_OPTIMAL_SYNC</text>
+<line opacity="0.5" stroke="#50d8e9" stroke-width="0.5" x1="-12" x2="-6" y1="12" y2="6"></line>
+</g>
+<g transform="translate(815, 290)">
+<text fill="#50d8e9" font-family="Inter" font-size="9" font-weight="500" opacity="0.9">Δ_MARGINAL_VAR</text>
+<line opacity="0.5" stroke="#50d8e9" stroke-width="0.5" x1="-12" x2="-6" y1="12" y2="6"></line>
+</g>
+<g transform="translate(710, 95)">
+<text fill="#5E6BFF" font-family="Inter" font-size="8" font-weight="500" opacity="0.8">ANOMALY_01</text>
+</g>
+<defs>
+<lineargradient id="primary-fade" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#50d8e9" stop-opacity="1"></stop>
+<stop offset="100%" stop-color="#50d8e9" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+</svg>
+</div>
+<!-- X-Axis Labels -->
+<div class="absolute bottom-6 left-10 right-10 flex justify-between text-[8px] font-mono-data text-custom-text-muted/40 uppercase tracking-[0.2em] z-20">
+<span>T_MINUS_60</span>
+<span>T_MINUS_45</span>
+<span>T_MINUS_30</span>
+<span>T_MINUS_15</span>
+<span>T_ZERO</span>
+</div>
+</div>
+</div>
+<!-- Right Panel: Signal Summary & Decision Log -->
+<div class="w-[320px] border-l border-white/[0.03] flex flex-col bg-[#070708] z-20 shadow-[-20px_0_40px_rgba(0,0,0,0.5)]">
+<!-- Signal Summary -->
+<div class="h-1/2 border-b border-white/[0.03] p-6 flex flex-col">
+<span class="text-[9px] font-mono-data text-custom-text-muted/40 uppercase tracking-[0.2em] mb-6">SIGNAL_SUMMARY</span>
+<div class="flex-1 flex flex-col gap-4">
+<div class="flex justify-between items-center p-3 border border-white/[0.03] bg-[#0a0a0b] rounded">
+<div class="flex items-center gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-secondary"></div>
+<span class="text-[10px] font-mono-data text-on-surface uppercase">VECTOR_SYNC</span>
+</div>
+<span class="text-[10px] font-mono-data text-secondary">OK // 100%</span>
+</div>
+<div class="flex justify-between items-center p-3 border border-white/[0.03] bg-[#0a0a0b] rounded">
+<div class="flex items-center gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-primary"></div>
+<span class="text-[10px] font-mono-data text-on-surface uppercase">DATA_STREAM_B</span>
+</div>
+<span class="text-[10px] font-mono-data text-primary">WARN // 94%</span>
+</div>
+<div class="flex justify-between items-center p-3 border border-white/[0.03] bg-[#0a0a0b] rounded opacity-50">
+<div class="flex items-center gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+<span class="text-[10px] font-mono-data text-on-surface uppercase">PHASE_ALPH_COORD</span>
+</div>
+<span class="text-[10px] font-mono-data text-custom-text-muted">STABLE</span>
+</div>
+</div>
+</div>
+<!-- Decision Log -->
+<div class="h-1/2 p-6 flex flex-col bg-[#050505]">
+<div class="flex justify-between items-center mb-6">
+<span class="text-[9px] font-mono-data text-custom-text-muted/40 uppercase tracking-[0.2em]">DECISION_LOG</span>
+<span class="text-[8px] font-mono-data text-secondary/40 border border-secondary/20 px-1.5 py-0.5 rounded">LIVE</span>
+</div>
+<div class="flex-1 overflow-hidden relative">
+<!-- Log entries with fine connecting line -->
+<div class="absolute top-2 bottom-2 left-[5px] w-px bg-white/[0.05]"></div>
+<div class="space-y-5">
+<div class="relative pl-6">
+<div class="absolute left-[3.5px] top-1.5 w-[4px] h-[4px] rounded-full bg-white/40"></div>
+<div class="text-[9px] font-mono-data text-custom-text-muted/40 uppercase mb-1">08:42:11.02</div>
+<div class="text-[10px] font-mono-data text-on-surface/80">PARAM_ADJUST // FLUX_R1</div>
+</div>
+<div class="relative pl-6">
+<div class="absolute left-[3.5px] top-1.5 w-[4px] h-[4px] rounded-full bg-secondary"></div>
+<div class="text-[9px] font-mono-data text-secondary/60 uppercase mb-1">08:41:05.99</div>
+<div class="text-[10px] font-mono-data text-on-surface">AUTO_RESOLVE // LATENCY_SPIKE</div>
+</div>
+<div class="relative pl-6">
+<div class="absolute left-[3.5px] top-1.5 w-[4px] h-[4px] rounded-full bg-white/20"></div>
+<div class="text-[9px] font-mono-data text-custom-text-muted/30 uppercase mb-1">08:35:22.14</div>
+<div class="text-[10px] font-mono-data text-on-surface/50">NODE_INIT // SECTOR_7</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 4. Product Principle -->
+<section class="px-margin-safe border-t border-custom-divider flex flex-col justify-center items-center relative overflow-hidden py-20">
+<div class="max-w-[1516px] w-full mx-auto">
+<h2 class="font-h2 text-h1 text-center text-on-surface mb-24 max-w-4xl mx-auto">Operating rhythm, simplified. The architecture of a focused team.</h2>
+<div class="grid grid-cols-3 gap-xl">
+<!-- Card 1 -->
+<div class="border border-custom-divider rounded-xl p-lg bg-custom-bg relative h-[400px] flex flex-col">
+<div class="font-mono-data text-custom-text-muted mb-md text-xs">FIG 0.1 / UNIFIED VIEW</div>
+<div class="flex-1 border border-custom-divider rounded-lg bg-[#0a0a0b] flex items-center justify-center p-md"><div class="w-full h-full dot-pattern flex items-center justify-center relative">
+<svg fill="none" height="80%" viewbox="0 0 200 200" width="80%" xmlns="http://www.w3.org/2000/svg">
+<rect height="160" rx="2" stroke="#232426" stroke-width="0.5" width="160" x="20" y="20"></rect>
+<line stroke="#232426" stroke-width="0.5" x1="60" x2="60" y1="20" y2="180"></line>
+<rect height="40" rx="1" stroke="#5E6BFF" stroke-width="0.75" width="100" x="70" y="30"></rect>
+<rect height="90" rx="1" stroke="#232426" stroke-width="0.5" width="100" x="70" y="80"></rect>
+<text fill="#454655" font-family="monospace" font-size="6" x="75" y="45">SEC_ALPHA</text>
+<text fill="#454655" font-family="monospace" font-size="6" x="75" y="95">SEC_BETA</text>
+<text fill="#454655" font-family="monospace" font-size="5" x="25" y="30">LAYER_0</text>
+</svg>
+<div class="absolute bottom-2 right-2 font-mono-data text-[8px] text-custom-text-muted opacity-40">COORD: 34.22 // 11.08</div>
+</div></div>
+</div>
+<!-- Card 2 -->
+<div class="border border-custom-divider rounded-xl p-lg bg-custom-bg relative h-[400px] flex flex-col">
+<div class="font-mono-data text-custom-text-muted mb-md text-xs">FIG 0.2 / DECISION GRAPH</div>
+<div class="flex-1 border border-custom-divider rounded-lg bg-[#0a0a0b] flex items-center justify-center p-md"><div class="w-full h-full dot-pattern flex items-center justify-center relative">
+<svg fill="none" height="80%" viewbox="0 0 200 200" width="80%" xmlns="http://www.w3.org/2000/svg">
+<circle cx="100" cy="100" r="40" stroke="#50d8e9" stroke-width="0.5"></circle>
+<circle cx="40" cy="40" r="8" stroke="#232426" stroke-width="0.5"></circle>
+<circle cx="160" cy="40" r="8" stroke="#232426" stroke-width="0.5"></circle>
+<circle cx="160" cy="160" r="8" stroke="#232426" stroke-width="0.5"></circle>
+<circle cx="40" cy="160" r="8" stroke="#232426" stroke-width="0.5"></circle>
+<!-- Dotted lines -->
+<line stroke="#454655" stroke-dasharray="2 2" stroke-width="0.5" x1="47" x2="71" y1="47" y2="71"></line>
+<line stroke="#454655" stroke-dasharray="2 2" stroke-width="0.5" x1="153" x2="129" y1="47" y2="71"></line>
+<line stroke="#454655" stroke-dasharray="2 2" stroke-width="0.5" x1="153" x2="129" y1="153" y2="129"></line>
+<line stroke="#454655" stroke-dasharray="2 2" stroke-width="0.5" x1="47" x2="71" y1="153" y2="129"></line>
+<!-- Tiny nodes at intersections -->
+<rect fill="#50d8e9" height="2" width="2" x="70" y="70"></rect>
+<rect fill="#50d8e9" height="2" width="2" x="128" y="70"></rect>
+<rect fill="#50d8e9" height="2" width="2" x="128" y="128"></rect>
+<rect fill="#50d8e9" height="2" width="2" x="70" y="128"></rect>
+<text fill="#454655" font-family="monospace" font-size="6" x="90" y="103">ROOT_V1</text>
+<text fill="#454655" font-family="monospace" font-size="5" x="40" y="30">ND_01</text>
+<text fill="#454655" font-family="monospace" font-size="5" x="155" y="30">ND_02</text>
+</svg>
+<div class="absolute top-2 left-2 font-mono-data text-[8px] text-custom-text-muted opacity-40">REL_MAP: SYNC</div>
+</div></div>
+</div>
+<!-- Card 3 -->
+<div class="border border-custom-divider rounded-xl p-lg bg-custom-bg relative h-[400px] flex flex-col">
+<div class="font-mono-data text-custom-text-muted mb-md text-xs">FIG 0.3 / AUTOMATED RHYTHM</div>
+<div class="flex-1 border border-custom-divider rounded-lg bg-[#0a0a0b] flex items-center justify-center p-md"><div class="w-full h-full dot-pattern flex items-center justify-center relative">
+<svg fill="none" height="80%" viewbox="0 0 200 200" width="80%" xmlns="http://www.w3.org/2000/svg">
+<!-- Sine wave -->
+<path d="M20,100 Q60,20 100,100 T180,100" fill="none" stroke="#E5FD17" stroke-width="0.75"></path>
+<!-- Vertical dashed line at focal point -->
+<line stroke="#454655" stroke-dasharray="2 2" stroke-width="0.5" x1="100" x2="100" y1="20" y2="180"></line>
+<circle cx="100" cy="100" fill="#E5FD17" r="3"></circle>
+<!-- Axis indicators -->
+<text fill="#454655" font-family="monospace" font-size="8" x="185" y="105">t</text>
+<text fill="#454655" font-family="monospace" font-size="8" x="105" y="25">v</text>
+<!-- Technical Callout -->
+<text fill="#E5FD17" font-family="monospace" font-size="6" x="108" y="98">[100, 100]</text>
+<text fill="#454655" font-family="monospace" font-size="5" x="108" y="106">SYNC_EVENT</text>
+</svg>
+<div class="absolute bottom-2 right-2 font-mono-data text-[8px] text-custom-text-muted opacity-40">FREQ: 440HZ // AMPL: 1.0</div>
+</div></div>
+</div>
+</div>
+</div>
+</section>
+<!-- 5. Signal Intelligence -->
+<section class="px-margin-safe border-t border-custom-divider flex items-center relative py-20">
+<div class="max-w-[1516px] w-full mx-auto grid grid-cols-2 gap-24 items-center">
+<div>
+<h2 class="font-h2 text-h1 text-on-surface mb-lg">Turn signals into focus</h2>
+<p class="font-body-lg text-[20px] text-custom-text-muted leading-relaxed">Aggregate noise from across your tools into a single, structured signal stream. Romer identifies anomalies and surfaces what matters.</p>
+</div>
+<div class="relative h-[600px] w-full"><div class="relative h-[600px] w-full flex items-center justify-center">
+<!-- Technical Grid Container -->
+<div class="w-full h-full border border-outline-variant/30 relative overflow-hidden bg-[#070708]">
+<!-- Ultra-fine Grid -->
+<div class="absolute inset-0 dot-pattern opacity-20"></div>
+<div class="absolute inset-0" style="background-image: linear-gradient(to right, #454655 0.5px, transparent 0.5px), linear-gradient(to bottom, #454655 0.5px, transparent 0.5px); background-size: 60px 60px; opacity: 0.1;"></div>
+<!-- Corner Markers -->
+<div class="absolute top-4 left-4 w-2 h-2 border-t border-l border-outline"></div>
+<div class="absolute top-4 right-4 w-2 h-2 border-t border-r border-outline"></div>
+<div class="absolute bottom-4 left-4 w-2 h-2 border-b border-l border-outline"></div>
+<div class="absolute bottom-4 right-4 w-2 h-2 border-b border-r border-outline"></div>
+<!-- Header Telemetry -->
+<div class="absolute top-6 left-8 flex gap-8">
+<div class="flex flex-col">
+<span class="font-mono-data text-[9px] text-custom-text-muted uppercase tracking-[0.2em]">System Hash</span>
+<span class="font-mono-data text-[11px] text-on-surface">0x8F22A_BETA</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mono-data text-[9px] text-custom-text-muted uppercase tracking-[0.2em]">Signal Density</span>
+<span class="font-mono-data text-[11px] text-secondary">0.842 RMS</span>
+</div>
+</div>
+<!-- Analytical Visualization (SVG) -->
+<div class="absolute inset-0 flex items-center justify-center p-xl">
+<svg class="w-full h-[60%]" preserveaspectratio="none" viewbox="0 0 1000 400">
+<defs>
+<lineargradient id="line-grad" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#50d8e9" stop-opacity="0"></stop>
+<stop offset="50%" stop-color="#50d8e9" stop-opacity="0.5"></stop>
+<stop offset="100%" stop-color="#50d8e9" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- Horizontal Reference Lines -->
+<line opacity="0.2" stroke="#454655" stroke-dasharray="4 4" stroke-width="0.5" x1="0" x2="1000" y1="100" y2="100"></line>
+<line opacity="0.1" stroke="#454655" stroke-width="0.5" x1="0" x2="1000" y1="200" y2="200"></line>
+<line opacity="0.2" stroke="#454655" stroke-dasharray="4 4" stroke-width="0.5" x1="0" x2="1000" y1="300" y2="300"></line>
+<!-- Primary Data Thread -->
+<path d="M0,200 L100,195 L200,210 L300,180 L400,220 L500,150 L600,230 L700,200 L800,210 L900,190 L1000,200" fill="none" stroke="url(#line-grad)" stroke-width="1"></path>
+<!-- Data Points (Sparse) -->
+<circle cx="300" cy="180" fill="#50d8e9" r="2"></circle>
+<circle cx="500" cy="150" fill="#50d8e9" r="2"></circle>
+<circle cx="600" cy="230" fill="#ffb689" r="2"></circle>
+<!-- Callouts -->
+<text fill="#50d8e9" font-family="Inter" font-size="10" font-weight="500" x="510" y="140">P_SYNC_OK</text>
+<text fill="#ffb689" font-family="Inter" font-size="10" font-weight="500" x="610" y="245">Δ_LATENCY_WARN</text>
+</svg>
+</div>
+<!-- Bottom Metadata -->
+<div class="absolute bottom-6 left-8 right-8 flex justify-between items-end font-mono-data">
+<div class="text-[9px] text-custom-text-muted/60 leading-relaxed">
+                SCAN_READY // ISO_27001_COMPLIANT<br/>
+                LATENCY: 14ms // PACKET_LOSS: 0.0001%
+            </div>
+<div class="flex gap-4 text-[10px] text-on-surface uppercase tracking-widest">
+<span class="text-primary">Live Feed</span>
+<span class="opacity-40">Historical</span>
+</div>
+</div>
+<!-- Small Floating Technical Status -->
+<div class="absolute top-1/2 right-12 -translate-y-1/2 border border-outline-variant/30 bg-surface-container-low/40 backdrop-blur-md p-4 flex flex-col gap-3">
+<div class="flex flex-col">
+<span class="text-[8px] text-custom-text-muted uppercase tracking-tighter">Core Load</span>
+<div class="w-24 h-0.5 bg-outline-variant mt-1 relative">
+<div class="absolute inset-y-0 left-0 bg-primary w-[62%]"></div>
+</div>
+</div>
+<div class="flex flex-col">
+<span class="text-[8px] text-custom-text-muted uppercase tracking-tighter">Uptime</span>
+<span class="text-xs text-on-surface font-medium">99.999%</span>
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</section>
+<!-- 6. Decision Command Center -->
+<section class="px-margin-safe border-t border-custom-divider flex items-center relative py-[160px]">
+<div class="max-w-[1516px] w-full mx-auto grid grid-cols-2 gap-24 items-center">
+<div class="relative h-[600px] w-full order-2 md:order-1"><!-- Main Dashboard Background -->
+<div class="absolute inset-0 bg-[#0a0a0b] border border-white/[0.05] rounded-xl overflow-hidden flex flex-col">
+<!-- Top Timeline Section - Refined -->
+<div class="p-lg border-b border-white/[0.03] relative h-[45%] bg-[#080809]">
+<div class="absolute inset-0 dot-pattern opacity-[0.05]"></div>
+<div class="relative h-full flex flex-col">
+<div class="flex justify-between items-start mb-8">
+<div class="flex flex-col gap-1">
+<span class="text-[9px] font-mono-data text-secondary/80 uppercase tracking-[0.2em]">Timeline_Analysis // 0xAF</span>
+<span class="text-[8px] font-mono-data text-custom-text-muted/40">PKT_LOSS_0.003% // STABLE</span>
+</div>
+<div class="flex gap-6 font-mono-data text-[8px] text-custom-text-muted/30 uppercase tracking-widest">
+<span>Q3_LOG</span>
+<span>Q4_PROJ</span>
+</div>
+</div>
+<div class="flex-1 relative">
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 600 120">
+<!-- Vertical grid markers -->
+<line stroke="white" stroke-dasharray="2 2" stroke-opacity="0.05" stroke-width="0.5" x1="50" x2="50" y1="0" y2="120"></line>
+<line stroke="white" stroke-dasharray="2 2" stroke-opacity="0.05" stroke-width="0.5" x1="200" x2="200" y1="0" y2="120"></line>
+<line stroke="white" stroke-dasharray="2 2" stroke-opacity="0.05" stroke-width="0.5" x1="350" x2="350" y1="0" y2="120"></line>
+<line stroke="white" stroke-dasharray="2 2" stroke-opacity="0.05" stroke-width="0.5" x1="500" x2="500" y1="0" y2="120"></line>
+<!-- Technical Data Path 1 -->
+<path d="M0,60 L50,60 L70,40 L180,40 L200,80 L350,80 L380,20 L500,20 L520,60 L600,60" fill="none" stroke="#5E6BFF" stroke-opacity="0.6" stroke-width="1"></path>
+<circle cx="70" cy="40" fill="#5E6BFF" r="1.5"></circle>
+<circle cx="380" cy="20" fill="#5E6BFF" r="1.5"></circle>
+<!-- Technical Data Path 2 (Secondary) -->
+<path d="M0,90 L120,90 L150,110 L300,110 L330,70 L480,70 L510,95 L600,95" fill="none" stroke="#50d8e9" stroke-dasharray="4 2" stroke-opacity="0.3" stroke-width="1"></path>
+<!-- Labels -->
+<text fill="#5E6BFF" font-family="Inter" font-size="7" font-weight="500" opacity="0.7" x="75" y="35">SIGNAL_ALPHA // DISCOVERY</text>
+<text fill="#5E6BFF" font-family="Inter" font-size="7" font-weight="500" opacity="0.7" x="385" y="15">CORE_DEPLOY // STAGE_3</text>
+<text fill="#50d8e9" font-family="Inter" font-size="7" font-weight="500" opacity="0.5" x="155" y="105">BACKLOG_INIT</text>
+</svg>
+<!-- X-Axis Labels -->
+<div class="absolute bottom-0 left-0 w-full flex justify-between px-2 font-mono-data text-[7px] text-custom-text-muted/20 uppercase tracking-[0.3em]">
+<span>AUG_24</span>
+<span>SEP_24</span>
+<span>OCT_24</span>
+<span>NOV_24</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Technical Hub -->
+<div class="flex-1 grid grid-cols-2 gap-px bg-white/[0.03]">
+<!-- Metrics Hub: Instrument Grade -->
+<div class="bg-[#0a0a0b] p-lg flex flex-col gap-6">
+<div class="flex justify-between items-center">
+<div class="text-mono-data text-[9px] text-custom-text-muted/60 uppercase font-bold tracking-[0.2em]">Operational telemetry</div>
+<div class="text-[8px] font-mono-data text-secondary/40">REFRESH: 200MS</div>
+</div>
+<div class="grid grid-cols-3 gap-2">
+<div class="flex flex-col gap-1">
+<span class="text-[8px] text-custom-text-muted/40 uppercase">Velocity</span>
+<span class="text-sm font-mono-data text-on-surface">14.28</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-[8px] text-custom-text-muted/40 uppercase">Latency</span>
+<span class="text-sm font-mono-data text-secondary">4.2ms</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-[8px] text-custom-text-muted/40 uppercase">Queue</span>
+<span class="text-sm font-mono-data text-on-surface">09</span>
+</div>
+</div>
+<div class="flex-1 border border-white/[0.03] rounded bg-[#080809] relative overflow-hidden">
+<div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(#454655 0.5px, transparent 0.5px), linear-gradient(to right, #454655 0.5px, transparent 0.5px); background-size: 20px 20px;"></div>
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none" viewbox="0 0 100 40">
+<path d="M0,35 L10,32 L20,36 L30,28 L40,30 L50,15 L60,25 L70,22 L80,30 L90,20 L100,25" fill="none" opacity="0.6" stroke="#50d8e9" stroke-width="0.5"></path>
+<path d="M0,40 L100,40" opacity="0.2" stroke="white" stroke-width="0.1"></path>
+</svg>
+<div class="absolute bottom-1 right-2 text-[7px] font-mono-data text-custom-text-muted/30">BIT_STREAM_72.04</div>
+</div>
+</div>
+<!-- Decision Schematic -->
+<div class="bg-[#0a0a0b] p-lg flex flex-col">
+<div class="text-mono-data text-[9px] text-custom-text-muted/60 uppercase font-bold tracking-[0.2em] mb-8">Decision Logic schematic</div>
+<div class="flex-1 flex items-center justify-center relative">
+<svg class="w-full h-full" viewbox="0 0 200 120">
+<!-- Central Node -->
+<circle cx="100" cy="60" fill="#5E6BFF" r="2"></circle>
+<circle cx="100" cy="60" fill="none" r="8" stroke="#5E6BFF" stroke-width="0.2"></circle>
+<!-- Branches -->
+<path d="M100,60 L60,40" opacity="0.2" stroke="white" stroke-width="0.3"></path>
+<path d="M100,60 L140,40" opacity="0.2" stroke="white" stroke-width="0.3"></path>
+<path d="M100,60 L100,100" opacity="0.2" stroke="white" stroke-dasharray="2 1" stroke-width="0.3"></path>
+<!-- End Nodes -->
+<rect fill="none" height="10" opacity="0.3" stroke="white" stroke-width="0.2" width="10" x="55" y="35"></rect>
+<rect fill="none" height="10" opacity="0.3" stroke="white" stroke-width="0.2" width="10" x="135" y="35"></rect>
+<circle cx="100" cy="100" fill="#ffb689" opacity="0.5" r="1.5"></circle>
+<!-- Labels -->
+<text fill="#9A9DA3" font-family="monospace" font-size="4" opacity="0.6" x="55" y="30">INPUT_A</text>
+<text fill="#9A9DA3" font-family="monospace" font-size="4" opacity="0.6" x="135" y="30">INPUT_B</text>
+<text fill="#ffb689" font-family="monospace" font-size="4" opacity="0.8" x="105" y="102">PENDING_STATE</text>
+</svg>
+</div>
+</div>
+</div>
+</div>
+<!-- Foreground Card: Clinical & Precise -->
+<div class="absolute -right-16 bottom-[10%] w-[340px] bg-[#0d0e0f]/90 backdrop-blur-xl border border-white/[0.08] rounded p-6 shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] z-20">
+<div class="flex items-center justify-between mb-8">
+<div class="flex items-center gap-3">
+<div class="w-1 h-1 bg-secondary rounded-full"></div>
+<span class="text-[10px] font-mono-data font-bold text-on-surface tracking-[0.2em] uppercase">Control Queue</span>
+</div>
+<span class="text-[8px] font-mono-data text-custom-text-muted/40 uppercase">ID: 0x294_Q</span>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center group cursor-pointer">
+<div class="space-y-0.5">
+<div class="text-[11px] text-on-surface/80 group-hover:text-on-surface transition-colors">Q4_STRATEGIC_OKRS</div>
+<div class="text-[8px] font-mono-data text-custom-text-muted/40 uppercase tracking-tighter">Priority: High // 02_SIGS</div>
+</div>
+<button class="px-3 py-1 border border-primary/30 text-primary text-[9px] font-mono-data hover:bg-primary/5 transition-all uppercase tracking-widest">Execute</button>
+</div>
+<div class="flex justify-between items-center group cursor-pointer">
+<div class="space-y-0.5">
+<div class="text-[11px] text-on-surface/80 group-hover:text-on-surface transition-colors">HIRING_V4_SCALE</div>
+<div class="text-[8px] font-mono-data text-custom-text-muted/40 uppercase tracking-tighter">Priority: Med // 05_SIGS</div>
+</div>
+<button class="px-3 py-1 border border-white/10 text-on-surface/40 text-[9px] font-mono-data hover:border-white/20 transition-all uppercase tracking-widest">Review</button>
+</div>
+<div class="flex justify-between items-center group cursor-pointer">
+<div class="space-y-0.5">
+<div class="text-[11px] text-on-surface/80 group-hover:text-on-surface transition-colors">INFRA_AUDIT_Q3</div>
+<div class="text-[8px] font-mono-data text-custom-text-muted/40 uppercase tracking-tighter">Priority: Low // 01_SIGS</div>
+</div>
+<button class="px-3 py-1 border border-white/10 text-on-surface/40 text-[9px] font-mono-data hover:border-white/20 transition-all uppercase tracking-widest">Review</button>
+</div>
+</div>
+</div></div>
+<div class="order-1 md:order-2">
+<h2 class="font-h2 text-h1 text-on-surface mb-lg">Guide every decision forward</h2>
+<p class="font-body-lg text-[20px] text-custom-text-muted leading-relaxed">Map strategic decisions against operational timelines. Keep execution unblocked with clear ownership and context.</p>
+</div>
+</div>
+</section>
+<!-- 7. Insights Timeline -->
+<section class="px-margin-safe border-t border-custom-divider flex flex-col justify-center relative overflow-hidden py-20">
+<div class="max-w-[1516px] w-full mx-auto relative pt-24">
+<!-- Connecting Line -->
+<div class="absolute top-1/2 left-0 w-full h-px bg-custom-divider -z-10"></div>
+<div class="grid grid-cols-4 gap-xl">
+<!-- Node 1 -->
+<div class="relative flex flex-col items-center text-center">
+<div class="w-4 h-4 rounded-full bg-[#5E6BFF] mb-lg relative z-10 shadow-[0_0_15px_#5E6BFF]"></div>
+<h3 class="font-h4 text-on-surface mb-sm">Approval cycles</h3>
+<p class="font-body-md text-custom-text-muted">Reduce bottlenecks in critical sign-offs.</p>
+</div>
+<!-- Node 2 -->
+<div class="relative flex flex-col items-center text-center">
+<div class="w-3 h-3 rounded-full bg-[#232426] border border-custom-text-muted mb-lg mt-0.5 relative z-10"></div>
+<h3 class="font-h4 text-on-surface mb-sm">Capacity forecast</h3>
+<p class="font-body-md text-custom-text-muted">Predict resource needs ahead of time.</p>
+</div>
+<!-- Node 3 -->
+<div class="relative flex flex-col items-center text-center">
+<div class="w-3 h-3 rounded-full bg-[#232426] border border-custom-text-muted mb-lg mt-0.5 relative z-10"></div>
+<h3 class="font-h4 text-on-surface mb-sm">Risk movement</h3>
+<p class="font-body-md text-custom-text-muted">Track shifting risk profiles continuously.</p>
+</div>
+<!-- Node 4 -->
+<div class="relative flex flex-col items-center text-center">
+<div class="w-3 h-3 rounded-full bg-[#232426] border border-custom-text-muted mb-lg mt-0.5 relative z-10"></div>
+<h3 class="font-h4 text-on-surface mb-sm">Operating rhythm</h3>
+<p class="font-body-md text-custom-text-muted">Establish a steady heartbeat for execution.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- 8. Customer Quotes -->
+<section class="px-margin-safe border-t border-custom-divider flex items-center bg-[#050505] py-20">
+<div class="max-w-[1516px] w-full mx-auto grid grid-cols-5 gap-lg">
+<!-- Left Quote -->
+<div class="col-span-3 bg-[#D1EBEB] rounded-2xl p-xl flex flex-col justify-between h-[480px]">
+<p class="font-h2 text-h2 text-black leading-tight max-w-2xl">"Romer finally gave our leadership team a unified lens. The signal-to-noise ratio is exactly what we needed to operate faster."</p>
+<div>
+<div class="font-bold text-black font-body-lg">Mara Chen</div>
+<div class="text-black/70 font-body-md">COO, Northline</div>
+</div>
+</div>
+<!-- Right Quote -->
+<div class="col-span-2 bg-[#C4FF44] rounded-2xl p-xl flex flex-col justify-between h-[480px]">
+<p class="font-h3 text-h3 text-black leading-tight">"It replaced three separate dashboards and endless status meetings."</p>
+<div>
+<div class="font-bold text-black font-body-lg">Ivo Patel</div>
+<div class="text-black/70 font-body-md">VP Operations, Meridian</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 9. Final CTA -->
+<section class="px-margin-safe border-t border-custom-divider flex flex-col justify-center items-center text-center py-20">
+<div class="max-w-2xl">
+<h2 class="font-h1 text-hero-headline text-on-surface mb-lg">Built for clarity.<br/>Ready today.</h2>
+<div class="flex justify-center gap-md">
+<button class="bg-white text-black px-xl py-md rounded font-body-lg font-bold">Start free trial</button>
+<button class="bg-transparent border border-custom-divider text-on-surface px-xl py-md rounded font-body-lg hover:bg-[#1a1b1d] transition-colors">Contact sales</button>
+</div>
+</div>
+</section>
+<!-- 10. Footer -->
+<footer class="bg-custom-sidebar border-t border-custom-divider flex flex-col justify-between px-margin-safe pt-24 pb-12">
+</footer></main></body></html>

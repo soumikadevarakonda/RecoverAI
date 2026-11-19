@@ -2,7 +2,6 @@ import sys
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import random
-from uuid import UUID
 
 # Add backend directory to sys.path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -23,13 +22,10 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
     """
     Deterministically seeds a merchant with a realistic batch of synthetic payment,
     incident, and recovery attempt data.
-
-    All monetary values are integer minor units (paise), matching Razorpay:
-    1250_00 paise == Rs 1,250.
     """
+    from uuid import UUID
     from sqlalchemy import select, delete
     from app.models.payment_event import PaymentEvent
-    from app.models.webhook_event import WebhookEvent
 
     DEFAULT_TRIAL_MERCHANT_ID = UUID("b614b90f-49fd-4d6a-8689-52d4d2878b03")
     if merchant_id is None and merchant_name == "Trial Merchant":
@@ -72,19 +68,8 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
                 )
             )
         )
-        merchant_webhook_ids = select(WebhookEvent.id).where(
-            WebhookEvent.merchant_id == existing_merchant.id
-        )
-        db.execute(
-            delete(PaymentEvent).where(PaymentEvent.webhook_event_id.in_(merchant_webhook_ids))
-        )
         db.execute(
             delete(Payment).where(Payment.merchant_id == existing_merchant.id)
-        )
-        # Webhook events (e.g. from demo payments) reference the merchant and
-        # would otherwise block deleting it on re-seed.
-        db.execute(
-            delete(WebhookEvent).where(WebhookEvent.merchant_id == existing_merchant.id)
         )
         db.execute(
             delete(Merchant).where(Merchant.id == existing_merchant.id)
@@ -104,9 +89,9 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
     policy = RecoveryPolicy(
         merchant_id=merchant.id,
         allowed_actions=["retry", "grace_period", "incentive", "ops_review"],
-        max_incentive=1000_00,       # Rs 1,000 per attempt
-        max_exposure=20000_00,       # Rs 20,000 total
-        approval_threshold=3000_00,  # Rs 3,000 campaign incentive cost
+        max_incentive=1000,
+        max_exposure=20000,
+        approval_threshold=3000.0,
     )
     db.add(policy)
     db.commit()
@@ -126,7 +111,7 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
             merchant_id=merchant.id,
             razorpay_payment_id=f"pay_hist_ok_{i}_{random.randint(1000, 9999)}",
             status="captured",
-            amount=random.choice([500_00, 1000_00, 1500_00, 2000_00]),
+            amount=random.choice([50000, 100000, 150000, 200000]),
             currency="INR",
             method=random.choice(methods),
             bank=random.choice(banks),
@@ -146,23 +131,21 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
         current_total_count=30,
         current_failed_count=10,
         current_failure_rate=0.33,
-        current_total_amount=30000_00,
-        current_failed_amount=10000_00,
+        current_total_amount=300000,
+        current_failed_amount=100000,
         baseline_total_count=30,
         baseline_failed_count=1,
         baseline_failure_rate=0.03,
-        baseline_total_amount=30000_00,
-        baseline_failed_amount=1000_00,
+        baseline_total_amount=300000,
+        baseline_failed_amount=10000,
         absolute_rate_increase=0.3,
         relative_degradation=10.0,
-        revenue_at_risk=17000_00,  # 17 targeted payments of Rs 1,000, matching the campaign below
+        revenue_at_risk=100000,
         window_start=past_inc_time - timedelta(minutes=30),
         window_end=past_inc_time,
         baseline_start=past_inc_time - timedelta(hours=2),
         baseline_end=past_inc_time - timedelta(hours=1),
-        # Its campaign below is completed, so the incident is resolved and no
-        # longer counts toward live revenue at risk.
-        status="resolved",
+        status="diagnosed",
         created_at=past_inc_time,
     )
     db.add(past_inc)
@@ -188,9 +171,9 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
         selected_action="retry",
         status="completed",
         target_payment_count=17,
-        total_revenue_at_risk=17000_00,
+        total_revenue_at_risk=170000,
         per_attempt_incentive=0,
-        total_incentive_cost=5 * 500_00,
+        total_incentive_cost=2500,
         created_at=past_inc_time,
     )
     db.add(past_campaign)
@@ -205,7 +188,7 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
             campaign_id=past_campaign.id,
             selected_action="retry",
             status="recovered",
-            recovered_amount=1000_00,
+            recovered_amount=10000,
             incentive_amount=0,
             created_at=past_inc_time + timedelta(minutes=j * 5),
         )
@@ -220,7 +203,7 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
             campaign_id=past_campaign.id,
             selected_action="grace_period",
             status="recovered" if j < 3 else "failed",
-            recovered_amount=1000_00 if j < 3 else 0,
+            recovered_amount=10000 if j < 3 else 0,
             incentive_amount=0,
             created_at=past_inc_time + timedelta(minutes=j * 5 + 30),
         )
@@ -235,8 +218,8 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
             campaign_id=past_campaign.id,
             selected_action="incentive",
             status="recovered" if j < 4 else "expired",
-            recovered_amount=1000_00 if j < 4 else 0,
-            incentive_amount=500_00,
+            recovered_amount=10000 if j < 4 else 0,
+            incentive_amount=500,
             created_at=past_inc_time + timedelta(minutes=j * 5 + 60),
         )
         db.add(attempt)
@@ -257,8 +240,8 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
         db.add(attempt)
 
     # --- CURRENT DEGRADED COHORT TRAFFIC (upi + HDFC) ---
-    # Create baseline window for current incident (30 payments, 1 failed, 29 ok).
-    # Captured payments carry no error code, exactly like real Razorpay data.
+    # Create baseline window for current incident (30 payments, 1 failed, 29 ok)
+    # Match error_code and error_step for captured payments to group them in the same cohort
     base_start = now - timedelta(hours=2)
     for i in range(30):
         is_failed = (i == 0)
@@ -266,21 +249,21 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
             merchant_id=merchant.id,
             razorpay_payment_id=f"pay_curr_base_{i}_{random.randint(1000, 9999)}",
             status="failed" if is_failed else "captured",
-            amount=1000_00,
+            amount=10000,
             currency="INR",
             method="upi",
             bank="HDFC",
-            error_code="GATEWAY_ERROR" if is_failed else None,
-            error_step="payment_authorization" if is_failed else None,
+            error_code="GATEWAY_ERROR",
+            error_step="payment_authorization",
             created_at=base_start + timedelta(minutes=i * 2),
         )
         db.add(pay)
 
     # Create current window for current incident (30 payments, 10 failed, 20 ok)
-    # 8 failures concentrated under GATEWAY_ERROR (Rs 14,000 total), 2 as noise
-    # under other codes; 20 captured payments with no error code.
+    # 8 failures concentrated under GATEWAY_ERROR, 2 as noise under other codes
+    # 20 captured matching the GATEWAY_ERROR cohort
     curr_start = now - timedelta(minutes=30)
-    failed_cohort_amounts = [1250_00, 2400_00, 850_00, 3200_00, 1750_00, 2100_00, 950_00, 1500_00]
+    failed_cohort_amounts = [1250, 2400, 850, 3200, 1750, 2100, 950, 1500]
     for i in range(30):
         is_failed = (i < 10)
         if is_failed:
@@ -291,15 +274,15 @@ def seed_trial_scenario(db: Session, merchant_name: str = "Trial Merchant", merc
             elif i == 8:
                 err_code = "BAD_REQUEST_ERROR"
                 err_step = "payment_authorization"
-                pay_amount = 1000_00
+                pay_amount = 10000
             else:
                 err_code = "INSUFFICIENT_FUNDS"
                 err_step = "payment_authorization"
-                pay_amount = 1000_00
+                pay_amount = 10000
         else:
-            err_code = None
-            err_step = None
-            pay_amount = 1000_00
+            err_code = "GATEWAY_ERROR"
+            err_step = "payment_authorization"
+            pay_amount = 10000
 
         pay = Payment(
             merchant_id=merchant.id,

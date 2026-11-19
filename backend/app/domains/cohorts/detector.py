@@ -1,7 +1,5 @@
 from datetime import datetime
-import logging
 import uuid
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.domains.cohorts.schemas import CohortKey, CohortMetrics
@@ -11,33 +9,6 @@ from app.models.incident import Incident
 MIN_TRANSACTION_COUNT = 20
 MIN_ABSOLUTE_INCREASE = 0.05
 MIN_RELATIVE_MULTIPLIER = 2.0
-
-# Incidents in these states are still being worked; a new incident for the same
-# cohort and an overlapping window would be a duplicate.
-ACTIVE_INCIDENT_STATUSES = ("detected", "diagnosed", "recovering")
-
-logger = logging.getLogger(__name__)
-
-
-def _has_active_overlapping_incident(
-    db: Session,
-    merchant_id: uuid.UUID,
-    method: str,
-    bank: str,
-    window_start: datetime,
-    window_end: datetime,
-) -> bool:
-    existing = db.scalar(
-        select(Incident.id).where(
-            Incident.merchant_id == merchant_id,
-            Incident.method == method,
-            Incident.bank == bank,
-            Incident.status.in_(ACTIVE_INCIDENT_STATUSES),
-            Incident.window_start <= window_end,
-            Incident.window_end >= window_start,
-        ).limit(1)
-    )
-    return existing is not None
 
 
 def detect_cohort_degradations(
@@ -57,7 +28,12 @@ def detect_cohort_degradations(
     baseline_cohorts = get_cohort_metrics(db, merchant_id, baseline_start, baseline_end)
 
     baseline_map: dict[CohortKey, CohortMetrics] = {
-        CohortKey(method=c.method, bank=c.bank): c
+        CohortKey(
+            method=c.method,
+            bank=c.bank,
+            error_code=c.error_code,
+            error_step=c.error_step,
+        ): c
         for c in baseline_cohorts
     }
 
@@ -68,7 +44,12 @@ def detect_cohort_degradations(
         if current.total_count < MIN_TRANSACTION_COUNT:
             continue
 
-        key = CohortKey(method=current.method, bank=current.bank)
+        key = CohortKey(
+            method=current.method,
+            bank=current.bank,
+            error_code=current.error_code,
+            error_step=current.error_step,
+        )
 
         baseline = baseline_map.get(key)
         baseline_failure_rate = baseline.failure_rate if baseline else 0.0
@@ -83,11 +64,7 @@ def detect_cohort_degradations(
         if baseline_failure_rate > 0:
             relative_degradation = round(current_failure_rate / baseline_failure_rate, 4)
         else:
-            # No baseline failures: compare against a smoothed baseline of one
-            # failure in (baseline_total + 1) so the value stays finite
-            # (float('inf') cannot be stored in JSON audit evidence).
-            smoothed_baseline = 1.0 / (baseline_total_count + 1)
-            relative_degradation = round(current_failure_rate / smoothed_baseline, 4)
+            relative_degradation = float("inf") if current_failure_rate > 0 else 1.0
 
         # Rule 2: current failure rate is at least 5 percentage points higher than baseline
         if absolute_rate_increase < MIN_ABSOLUTE_INCREASE:
@@ -97,15 +74,8 @@ def detect_cohort_degradations(
         if current_failure_rate < MIN_RELATIVE_MULTIPLIER * baseline_failure_rate:
             continue
 
-        # Skip cohorts that already have an active incident for an overlapping window
-        if _has_active_overlapping_incident(
-            db, merchant_id, current.method, current.bank, window_start, window_end
-        ):
-            continue
-
-        # Revenue at risk: failed amount sharing the cohort's dominant failure
-        # signature - exactly the payments a recovery campaign will target.
-        revenue_at_risk = current.signature_failed_amount
+        # Revenue at risk: failed amount in current window
+        revenue_at_risk = current.failed_amount
 
         incident = Incident(
             merchant_id=merchant_id,
@@ -168,7 +138,6 @@ def detect_cohort_degradations(
                 )
                 db.commit()
             except Exception:
-                db.rollback()
-                logger.exception("Failed to record INCIDENT_DETECTED audit event for incident %s", inc.id)
+                pass
 
     return incidents

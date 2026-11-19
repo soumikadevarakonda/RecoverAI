@@ -45,9 +45,9 @@
                     <div class="space-y-1.5">
                         <span class="text-[11px] font-body text-text-subtle uppercase tracking-wider block font-medium">Failure Rate Elevation</span>
                         <div class="flex items-baseline gap-3">
-                            <span id="cmd-curr-failure-rate" class="text-[28px] font-heading text-accent-coral font-bold">—</span>
-                            <span id="cmd-baseline-failure-rate" class="text-[15px] font-body text-text-muted">—</span>
-                            <span id="cmd-rate-delta" class="text-[13px] font-mono font-bold text-accent-coral px-2 py-0.5 rounded bg-accent-coral/10 border border-accent-coral/20">—</span>
+                            <span id="cmd-curr-failure-rate" class="text-[28px] font-heading text-accent-coral font-bold">28.6%</span>
+                            <span id="cmd-baseline-failure-rate" class="text-[15px] font-body text-text-muted">vs 3.3% baseline</span>
+                            <span id="cmd-rate-delta" class="text-[13px] font-mono font-bold text-accent-coral px-2 py-0.5 rounded bg-accent-coral/10 border border-accent-coral/20">+25.2% pts</span>
                         </div>
                         <p id="cmd-rate-note" class="text-[14px] text-text-muted font-body">
                             8.6x elevation above normal operating baseline
@@ -78,19 +78,19 @@
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 text-[14px]">
                         <div>
                             <span class="text-[11px] text-text-subtle block uppercase font-mono">Issuing Bank</span>
-                            <span id="cmd-evidence-bank" class="text-white font-medium text-[15px]">—</span>
+                            <span id="cmd-evidence-bank" class="text-white font-medium text-[15px]">HDFC Bank</span>
                         </div>
                         <div>
                             <span class="text-[11px] text-text-subtle block uppercase font-mono">Method</span>
-                            <span id="cmd-evidence-method" class="text-white font-medium text-[15px]">—</span>
+                            <span id="cmd-evidence-method" class="text-white font-medium text-[15px]">UPI</span>
                         </div>
                         <div>
                             <span class="text-[11px] text-text-subtle block uppercase font-mono">Error Code</span>
-                            <span id="cmd-evidence-code" class="text-white font-mono text-[13px] bg-surface-elevated px-2 py-0.5 rounded border border-border-hairline inline-block mt-0.5">—</span>
+                            <span id="cmd-evidence-code" class="text-white font-mono text-[13px] bg-surface-elevated px-2 py-0.5 rounded border border-border-hairline inline-block mt-0.5">GATEWAY_ERROR</span>
                         </div>
                         <div>
                             <span class="text-[11px] text-text-subtle block uppercase font-mono">Pipeline Stage</span>
-                            <span id="cmd-evidence-step" class="text-white font-mono text-[13px] bg-surface-elevated px-2 py-0.5 rounded border border-border-hairline inline-block mt-0.5">—</span>
+                            <span id="cmd-evidence-step" class="text-white font-mono text-[13px] bg-surface-elevated px-2 py-0.5 rounded border border-border-hairline inline-block mt-0.5">payment_authorization</span>
                         </div>
                     </div>
                 </div>
@@ -122,20 +122,20 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     <div class="p-6 rounded-lg bg-surface-card border border-border-hairline space-y-2">
                         <span class="text-[11px] font-mono text-text-subtle uppercase tracking-wider block font-medium">Recommended Action</span>
-                        <div id="cmd-action-name" class="text-[28px] font-heading font-bold text-white">—</div>
+                        <div id="cmd-action-name" class="text-[28px] font-heading font-bold text-white">Retry</div>
                         <div class="text-[13px] text-text-muted font-body">Direct payment link recovery</div>
                     </div>
 
                     <div class="p-6 rounded-lg bg-surface-card border border-border-hairline space-y-2">
                         <span class="text-[11px] font-mono text-text-subtle uppercase tracking-wider block font-medium">Historical Recovery Rate</span>
-                        <div id="cmd-hist-rate" class="text-[28px] font-heading font-bold text-accent-cyan">—</div>
-                        <div id="cmd-hist-attempts" class="text-[13px] text-text-muted font-body">—</div>
+                        <div id="cmd-hist-rate" class="text-[28px] font-heading font-bold text-accent-cyan">100%</div>
+                        <div id="cmd-hist-attempts" class="text-[13px] text-text-muted font-body">Observed rate across 5 attempts</div>
                     </div>
 
                     <div class="p-6 rounded-lg bg-surface-card border border-border-hairline space-y-2">
                         <span class="text-[11px] font-mono text-text-subtle uppercase tracking-wider block font-medium">Expected Net Recovery</span>
-                        <div id="cmd-expected-recovery" class="text-[28px] font-heading font-bold text-accent-indigo">—</div>
-                        <div id="cmd-expected-note" class="text-[13px] text-text-muted font-body">—</div>
+                        <div id="cmd-expected-recovery" class="text-[28px] font-heading font-bold text-accent-indigo">₹14,000</div>
+                        <div class="text-[13px] text-text-muted font-body">₹0 incentive cost &bull; 100% net yield</div>
                     </div>
                 </div>
 

@@ -105,10 +105,7 @@ def evaluate_trial_scenario(
     )
 
     # 5. Evaluate economics to extract rate source & net recovery value for the chosen action
-    candidates = evaluate_recovery_economics(
-        db, incident, diagnosis, policy,
-        target_count=attempt.campaign.target_payment_count if attempt.campaign else None,
-    )
+    candidates = evaluate_recovery_economics(db, incident, diagnosis, policy)
     matched = next((c for c in candidates if c.action == attempt.selected_action), None)
     
     rate_source = "configured"

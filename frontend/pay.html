@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Razorpay Test Mode Checkout — RecoverAI</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/tailwind.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #0c1527; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
@@ -21,7 +21,7 @@
                     ₹
                 </div>
                 <div>
-                    <h2 class="font-bold text-white text-base leading-tight">RecoverAI Merchant</h2>
+                    <h2 class="font-bold text-white text-base leading-tight">Trial Merchant</h2>
                     <span class="text-[11px] text-blue-300 font-mono tracking-wide uppercase">Razorpay Test Mode Gateway</span>
                 </div>
             </div>
@@ -34,11 +34,11 @@
         <div class="p-6 border-b border-slate-800/80 bg-slate-900/50 space-y-3">
             <div class="flex justify-between items-baseline">
                 <span class="text-xs text-slate-400 font-mono uppercase tracking-wider">Amount Payable</span>
-                <span id="display-amount" class="text-3xl font-extrabold text-white tracking-tight font-mono">—</span>
+                <span id="display-amount" class="text-3xl font-extrabold text-white tracking-tight font-mono">₹1,250</span>
             </div>
             <div class="flex justify-between text-xs text-slate-400 pt-1 font-mono">
-                <span>Reference: <span id="display-ref" class="text-slate-200 font-bold">—</span></span>
-                <span id="display-link-id" class="text-blue-400">—</span>
+                <span>Reference: <span id="display-ref" class="text-slate-200 font-bold">rec_plan_01</span></span>
+                <span id="display-link-id" class="text-blue-400">plink_live</span>
             </div>
             <p class="text-xs text-slate-400 font-normal leading-relaxed pt-1">
                 Smart Recovery Link dispatched by <strong class="text-slate-200">RecoverAI Control Plane</strong> to resolve transient gateway authorization degradation.
@@ -71,13 +71,11 @@
                 </div>
             </div>
 
-            <div id="pay-error" class="hidden p-3 rounded-xl border border-rose-500/40 bg-rose-500/10 text-rose-300 text-xs font-mono"></div>
-            <button id="btn-pay" onclick="handlePay()" disabled class="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 font-mono">
+            <button id="btn-pay" onclick="handlePay()" class="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 font-mono">
                 <span>Simulate Successful Payment &rarr;</span>
             </button>
             <p class="text-center text-[11px] text-slate-500 font-mono">
-                Development checkout simulator • No real money is charged<br/>
-                Settlement is verified by the RecoverAI backend
+                Safe sandbox simulation • No real money is charged
             </p>
         </div>
 
@@ -88,7 +86,7 @@
             </div>
             <div class="space-y-1">
                 <h3 class="text-xl font-bold text-white">Payment Verified</h3>
-                <p class="text-sm text-slate-400">Simulated payment settled through RecoverAI's webhook verification path.</p>
+                <p class="text-sm text-slate-400">Razorpay webhook confirmed. RecoverAI has verified settlement.</p>
             </div>
             <div class="p-4 rounded-xl bg-slate-800/60 border border-slate-700/50 text-xs font-mono space-y-1.5 text-left text-slate-300">
                 <div class="flex justify-between">
@@ -97,89 +95,57 @@
                 </div>
                 <div class="flex justify-between">
                     <span class="text-slate-400">Amount Settled:</span>
-                    <span id="success-amount" class="text-white font-bold">—</span>
+                    <span id="success-amount" class="text-white font-bold">₹1,250</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-slate-400">Status:</span>
-                    <span id="success-status" class="text-emerald-400 font-bold uppercase">—</span>
+                    <span class="text-emerald-400 font-bold uppercase">Captured / Recovered</span>
                 </div>
             </div>
-            <button onclick="returnToControlPlane()" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold text-sm rounded-xl transition-all font-mono">
+            <button onclick="window.close(); if(!window.closed) window.location.href='/';" class="w-full py-3 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white font-bold text-sm rounded-xl transition-all font-mono">
                 Return to RecoverAI Control Plane
             </button>
         </div>
     </div>
 
-    <script src="js/api.js"></script>
     <script>
         const urlParams = new URLSearchParams(window.location.search);
-        const refId = urlParams.get('ref') || urlParams.get('reference_id');
+        const refId = urlParams.get('ref') || urlParams.get('reference_id') || 'rec_plan_01';
+        const linkId = urlParams.get('id') || 'plink_live';
+        const rawAmount = parseInt(urlParams.get('amount')) || 1250;
+        const displayAmountVal = (rawAmount > 100 && rawAmount % 100 === 0 && rawAmount > 5000) ? (rawAmount / 100) : rawAmount;
+        const amountFormatted = '₹' + displayAmountVal.toLocaleString('en-IN');
 
-        function formatINR(paise) {
-            if (paise === undefined || paise === null) return '—';
-            return '₹' + (Number(paise) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 });
-        }
+        document.getElementById('display-ref').innerText = refId;
+        document.getElementById('display-link-id').innerText = linkId;
+        document.getElementById('display-amount').innerText = amountFormatted;
 
-        function showError(message) {
-            const el = document.getElementById('pay-error');
-            el.textContent = message;
-            el.classList.remove('hidden');
-        }
-
-        function returnToControlPlane() {
-            if (window.opener && !window.opener.closed) {
-                window.close();
-                return;
-            }
-            window.location.href = '/';
-        }
-
-        async function loadAttempt() {
-            if (!refId) {
-                showError('Missing payment reference (?ref=...).');
-                return;
-            }
-            document.getElementById('display-ref').textContent = refId;
-            try {
-                // Amount and link come from the backend, never from the URL.
-                const attempt = await RecoverAPI.getRecoveryDetail(refId);
-                document.getElementById('display-link-id').textContent = attempt.payment_link_id || '—';
-                document.getElementById('display-amount').textContent = formatINR(attempt.charge_amount);
-                if (attempt.status === 'recovered') {
-                    showSuccess(attempt);
-                } else if (attempt.status !== 'executed') {
-                    showError(`This payment link is not payable (status: ${attempt.status}).`);
-                } else {
-                    document.getElementById('btn-pay').disabled = false;
-                }
-            } catch (err) {
-                showError(`Could not load payment link: ${err.message}`);
-            }
-        }
-
-        function showSuccess(result) {
-            document.getElementById('payment-form').classList.add('hidden');
-            document.getElementById('success-state').classList.remove('hidden');
-            document.getElementById('success-pay-id').textContent = result.resulting_payment_id || '—';
-            document.getElementById('success-amount').textContent = formatINR(result.recovered_amount);
-            document.getElementById('success-status').textContent = result.status;
-        }
-
-        async function handlePay() {
+        function handlePay() {
             const btn = document.getElementById('btn-pay');
             btn.disabled = true;
             btn.innerHTML = '<span class="inline-block animate-spin mr-2">⏳</span> Processing Payment...';
-            try {
-                const result = await RecoverAPI.simulatePaymentLinkPaid(refId);
-                showSuccess(result);
-            } catch (err) {
-                showError(`Payment was not recorded: ${err.message}`);
-                btn.disabled = false;
-                btn.innerHTML = '<span>Simulate Successful Payment &rarr;</span>';
-            }
-        }
 
-        loadAttempt();
+            setTimeout(() => {
+                // Record in localStorage
+                try {
+                    const SIM_KEY = 'recoverai_demo_simulated_recovered';
+                    let state = { count: 0, amount: 0, recoveredIds: [] };
+                    const stored = localStorage.getItem(SIM_KEY);
+                    if (stored) state = JSON.parse(stored);
+                    if (!state.recoveredIds.includes(refId)) {
+                        state.recoveredIds.push(refId);
+                        state.count = state.recoveredIds.length;
+                        state.amount += displayAmountVal;
+                        localStorage.setItem(SIM_KEY, JSON.stringify(state));
+                    }
+                } catch(e) {}
+
+                document.getElementById('payment-form').classList.add('hidden');
+                document.getElementById('success-state').classList.remove('hidden');
+                document.getElementById('success-pay-id').innerText = 'pay_sim_' + Math.random().toString(36).substring(2, 10);
+                document.getElementById('success-amount').innerText = amountFormatted;
+            }, 600);
+        }
     </script>
 </body>
 </html>

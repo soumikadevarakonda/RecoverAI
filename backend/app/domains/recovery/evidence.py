@@ -1,5 +1,3 @@
-from typing import Any
-
 from sqlalchemy.orm import Session
 
 from app.models.incident import Incident
@@ -20,16 +18,13 @@ def build_decision_evidence(
     guardrail_result: Any | None = None,
     adaptive_result: Any | None = None,
     operational_memory: Any | None = None,
-    target_count: int | None = None,
 ) -> dict:
     """
     Assembles structured evidence explaining why a recovery action was selected,
     including candidate economics, historical outcomes, and guardrail verification.
     """
     # Evaluate economics to get candidate details
-    candidates = evaluate_recovery_economics(
-        db, incident, diagnosis, policy, target_count=target_count
-    )
+    candidates = evaluate_recovery_economics(db, incident, diagnosis, policy)
     matched = next((c for c in candidates if c.action == selected_action), None)
 
     expected_rate = 0.0

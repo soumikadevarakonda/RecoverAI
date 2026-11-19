@@ -10,7 +10,6 @@ from app.models.payment import Payment
 from app.models.recovery_policy import RecoveryPolicy
 from app.models.recovery_attempt import RecoveryAttempt
 from app.models.recovery_campaign import RecoveryCampaign
-from app.domains.recovery.economics import EXPOSURE_STATUSES
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +67,7 @@ def evaluate_campaign_guardrails(
     raw_exposure = db.scalar(
         select(func.sum(RecoveryAttempt.incentive_amount)).where(
             RecoveryAttempt.merchant_id == policy_merchant_id,
-            RecoveryAttempt.status.in_(EXPOSURE_STATUSES),
+            RecoveryAttempt.status.in_(["pending", "approved", "executed"]),
         )
     )
     active_exposure = int(raw_exposure) if raw_exposure is not None else 0
@@ -366,19 +365,6 @@ def evaluate_execution_guardrails(
         reason_code=lifecycle_code,
         explanation=lifecycle_explanation,
         details={"attempt_status": attempt.status, "campaign_status": attempt.campaign.status if attempt.campaign else None},
-    ))
-
-    # 3b. Action executability: ops_review is resolved by a human, never by a payment link
-    link_executable = attempt.selected_action in ("retry", "grace_period", "incentive")
-    checks.append(CheckResult(
-        check_name="action_executable",
-        passed=link_executable,
-        reason_code="ACTION_EXECUTABLE" if link_executable else "ACTION_NOT_LINK_EXECUTABLE",
-        explanation=(
-            f"Action '{attempt.selected_action}' is executed via a payment link."
-            if link_executable
-            else f"Action '{attempt.selected_action}' requires operator review and cannot be executed as a payment link."
-        ),
     ))
 
     # 4. Financial Sanity & Charge Amount

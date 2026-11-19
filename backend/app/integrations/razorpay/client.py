@@ -1,9 +1,5 @@
-import logging
-
 import httpx
 from app.core.config import settings
-
-logger = logging.getLogger(__name__)
 
 
 class RazorpayClient:
@@ -27,7 +23,6 @@ class RazorpayClient:
         expire_by: int | None = None,
     ) -> dict:
         if self._is_placeholder():
-            logger.info("Razorpay keys not configured; using built-in checkout simulator for %s", reference_id)
             clean_ref = reference_id.replace("rec_", "")
             return {
                 "id": f"plink_{clean_ref}",
@@ -62,12 +57,7 @@ class RazorpayClient:
             response.raise_for_status()
             return response.json()
         except httpx.HTTPStatusError as exc:
-            if exc.response.status_code == 401 and not settings.is_production:
-                logger.warning(
-                    "Razorpay rejected the configured keys (401); falling back to the "
-                    "built-in checkout simulator for %s. Check RAZORPAY_KEY_ID/SECRET.",
-                    reference_id,
-                )
+            if exc.response.status_code == 401 and settings.environment != "production":
                 clean_ref = reference_id.replace("rec_", "")
                 return {
                     "id": f"plink_{clean_ref}",

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+﻿from datetime import datetime, timezone
 import uuid
 
 from sqlalchemy import (
@@ -48,12 +48,10 @@ class RecoveryPolicy(Base):
         default=list,
     )
 
-    # Campaign incentive cost (minor units / paise) above which an operator
-    # must approve. 0 means every incentive campaign needs approval.
     approval_threshold: Mapped[float] = mapped_column(
         Float,
         nullable=False,
-        default=0.0,
+        default=0.5,
     )
 
     created_at: Mapped[datetime] = mapped_column(
