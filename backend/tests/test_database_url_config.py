@@ -1,3 +1,5 @@
+from typing import get_type_hints
+
 from app.core.config import Settings
 
 
@@ -19,3 +21,9 @@ def test_recovery_service_imports_with_lazy_razorpay_client() -> None:
     from app.domains.recovery.service import execute_recovery_attempt
 
     assert callable(execute_recovery_attempt)
+
+
+def test_recovery_evidence_annotations_resolve() -> None:
+    from app.domains.recovery.evidence import build_decision_evidence
+
+    assert "guardrail_result" in get_type_hints(build_decision_evidence)
