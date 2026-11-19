@@ -13,3 +13,9 @@ def test_existing_psycopg_url_is_unchanged() -> None:
     settings = Settings(database_url=database_url)
 
     assert settings.database_url == database_url
+
+
+def test_recovery_service_imports_with_lazy_razorpay_client() -> None:
+    from app.domains.recovery.service import execute_recovery_attempt
+
+    assert callable(execute_recovery_attempt)
